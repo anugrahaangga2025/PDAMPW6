@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Peta + Batas Wilayah + Marker Foto</title>
+  <title>Peta Gabungan GeoJSON</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     #map { height: 100vh; }
@@ -13,13 +13,6 @@
       margin-bottom: 8px;
       display: block;
     }
-    .boundary-style {
-      color: "#ff0000";
-      weight: 2;
-      opacity: 0.6;
-      fillColor: "#ffaaaa";
-      fillOpacity: 0.2;
-    }
   </style>
 </head>
 <body>
@@ -27,24 +20,42 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // Inisialisasi peta (center & zoom bisa disesuaikan)
     var map = L.map('map').setView([-6.951424468056556, 107.632730888448307], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // URL / path ke file GeoJSON marker (dengan foto)
-    var markerGeoJsonUrl = 'Titikbangunan3oct.geojson';
+    // Fungsi style untuk batas wilayah / polygon
+    function styleBoundary(feature) {
+      return {
+        color: "#ff0000",
+        weight: 2,
+        opacity: 0.6,
+        fillColor: "#ffaaaa",
+        fillOpacity: 0.2
+      };
+    }
 
-    // URL / path ke file GeoJSON batas wilayah
-    var boundaryGeoJsonUrl = 'DMA.geojson';
+    // Fungsi style lain jika mau beda styling
+    function styleServiceArea(feature) {
+      return {
+        color: "#0000ff",
+        weight: 2,
+        opacity: 0.5,
+        fillOpacity: 0.1,
+        fillColor: "#aaaaff"
+      };
+    }
 
-    // Fungsi untuk marker (sama seperti sebelumnya)
+    // Fungsi popup untuk marker (point) dengan foto & properti
     function onEachMarker(feature, layer) {
       if (feature.properties) {
-        var popupContent = "";
+        var popupContent = '';
+
         if (feature.properties.foto) {
-          popupContent += '<img class="popup-image" src="' + feature.properties.foto + '" alt="Foto" />';
+          popupContent += '<img class="popup-image" src="' + feature.properties.foto + '" alt="Foto" /><br />';
         }
         if (feature.properties.alamat) {
           popupContent += '<strong>Alamat:</strong> ' + feature.properties.alamat + '<br />';
@@ -55,45 +66,53 @@
         if (feature.properties["no rumah"]) {
           popupContent += '<strong>No Rumah:</strong> ' + feature.properties["no rumah"] + '<br />';
         }
+
         layer.bindPopup(popupContent);
       }
     }
 
-    // Load batas wilayah dulu
-    fetch(boundaryGeoJsonUrl)
-      .then(res => res.json())
-      .then(boundaryData => {
-        L.geoJSON(boundaryData, {
-          style: function(feature) {
-            return {
-              color: "#ff0000",
-              weight: 2,
-              opacity: 0.6,
-              fillColor: "#ffaaaa",
-              fillOpacity: 0.2
-            };
-          }
-        }).addTo(map);
-      })
-      .catch(err => {
-        console.error("Gagal load batas wilayah:", err);
-      });
+    // Daftar file GeoJSON yang akan dimuat
+    const geojsonFiles = [
+      {
+        url: 'Titikbangunan3oct.geojson',
+        isBoundary: false,
+        onEach: onEachMarker
+      },
+      {
+        url: 'DMA.geojson',
+        isBoundary: true,
+        styleFunc: styleBoundary
+      },
+      {
+        url: 'pipa.geojson',
+        isBoundary: true,
+        styleFunc: styleServiceArea
+      },
+      // Tambah file lainnya di sini sesuai kebutuhan
+    ];
 
-    // Load marker GeoJSON
-    fetch(markerGeoJsonUrl)
-      .then(res => res.json())
-      .then(markerData => {
-        L.geoJSON(markerData, {
-          onEachFeature: onEachMarker,
-          pointToLayer: function(feature, latlng) {
-            return L.marker(latlng);
+    // Fungsi untuk memuat semua file
+    geojsonFiles.forEach(item => {
+      fetch(item.url)
+        .then(response => response.json())
+        .then(data => {
+          if (item.isBoundary) {
+            // file boundary / polygon
+            L.geoJSON(data, {
+              style: item.styleFunc
+            }).addTo(map);
+          } else {
+            // file marker / titik
+            L.geoJSON(data, {
+              onEachFeature: item.onEach,
+              pointToLayer: (feature, latlng) => L.marker(latlng)
+            }).addTo(map);
           }
-        }).addTo(map);
-      })
-      .catch(err => {
-        console.error("Gagal load marker GeoJSON:", err);
-      });
-
+        })
+        .catch(err => {
+          console.error("Gagal load file GeoJSON:", item.url, err);
+        });
+    });
   </script>
 </body>
 </html>
