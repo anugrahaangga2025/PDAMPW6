@@ -150,6 +150,7 @@
                                         <a class="small text-white stretched-link" href="#">View Details</a>
                                         <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -246,6 +247,16 @@
         isBoundary: true,
         styleFunc: styleServiceArea
       },
+      {
+        url: 'pipaexisting.geojson',
+        isBoundary: true,
+        styleFunc: styleServiceArea
+      },
+      {
+        url: 'pipaspamtegalega.geojson',
+        isBoundary: true,
+        styleFunc: styleServiceArea
+      },
       // Tambah file lainnya di sini sesuai kebutuhan
     ];
 
@@ -273,6 +284,7 @@
     });
   </script>
  </div> 
+ 
                         <div class="card mb-4">
                             <div class="card-header">
                                 <i class="fas fa-table me-1"></i>
@@ -360,5 +372,51 @@
         <script src="assets/demo/chart-bar-demo.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
         <script src="js/datatables-simple-demo.js"></script>
+        <script>
+async function loadGeoJSONtoTable() {
+  try {
+    // arahkan ke file GeoJSON kamu
+    const response = await fetch("Titikbangunan3oct.geojson");
+    const geojson = await response.json();
+
+    const features = geojson.features;
+    if (!features || features.length === 0) {
+      console.warn("GeoJSON kosong");
+      return;
+    }
+
+    // ambil nama kolom dari properties
+    const keys = Object.keys(features[0].properties);
+
+    // cari tabel dashboard (udah ada id="datatablesSimple")
+    const table = document.querySelector("#datatablesSimple");
+    const thead = table.querySelector("thead");
+    const tbody = table.querySelector("tbody");
+
+    // bikin header tabel otomatis
+    thead.innerHTML = "<tr>" + keys.map(k => `<th>${k}</th>`).join('') + "</tr>";
+
+    // isi data ke tabel
+    tbody.innerHTML = features.map(f => {
+      return "<tr>" + keys.map(k => {
+        const value = f.properties[k];
+        if (typeof value === "string" && value.startsWith("http")) {
+          return `<td><a href="${value}" target="_blank">${value}</a></td>`;
+        }
+        return `<td>${value ?? ""}</td>`;
+      }).join('') + "</tr>";
+    }).join('');
+
+    console.log("✅ GeoJSON berhasil dimuat ke tabel!");
+
+  } catch (err) {
+    console.error("❌ Gagal memuat GeoJSON:", err);
+  }
+}
+
+// jalankan saat halaman selesai dimuat
+window.addEventListener("DOMContentLoaded", loadGeoJSONtoTable);
+</script>
+
     </body>
 </html>
