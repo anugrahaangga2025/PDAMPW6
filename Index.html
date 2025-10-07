@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard PDAM Tirtawening</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body {
+      background-color: #0b1f3b;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      overflow-x: hidden;
+      margin: 0;
+    }
+
+    nav.navbar {
+      background: linear-gradient(90deg, #0b1f3b, #133d74);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    #layoutSidenav {
+      display: flex;
+      height: calc(100vh - 56px);
+      overflow: hidden;
+    }
+
+    #layoutSidenav_nav {
+      width: 250px;
+      background-color: #10284e;
+      transition: all 0.5s ease;
+    }
+
+    body.sb-sidenav-toggled #layoutSidenav_nav {
+      margin-left: -250px;
+    }
+
+    #layoutSidenav_content {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    .sb-sidenav-menu {
+      padding: 20px;
+    }
+
+    .sb-sidenav-menu a {
+      color: #c9d6e3;
+      text-decoration: none;
+      display: block;
+      padding: 10px;
+      border-radius: 5px;
+      transition: 0.3s;
+    }
+
+    .sb-sidenav-menu a:hover {
+      background-color: #1a3d70;
+      color: #4db8ff;
+    }
+
+    @media (max-width: 768px) {
+      #layoutSidenav_nav {
+        position: fixed;
+        height: 100vh;
+        width: 75%;
+        z-index: 1050;
+      }
+
+      body.sb-sidenav-toggled #layoutSidenav_nav {
+        margin-left: 0;
+      }
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: #10284e;
+      color: #e0e0e0;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .leaflet-popup-tip {
+      background: #10284e;
+    }
+
+    .leaflet-control-zoom a {
+      background-color: #133d74 !important;
+      color: #fff !important;
+      border: none !important;
+    }
+
+    .leaflet-control-zoom a:hover {
+      background-color: #4db8ff !important;
+    }
+
+    .leaflet-control-layers {
+      background-color: rgba(16, 40, 78, 0.9);
+      color: #fff;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-dark">
+    <div class="container-fluid">
+      <button class="btn btn-link text-white" id="sidebarToggle">
+        <i class="fas fa-bars fa-lg"></i>
+      </button>
+      <a class="navbar-brand fw-bold" href="#">
+        <img src="https://perumdatirtawening.co.id/asset/image/logo-horizon-kecils.gif" height="45" alt="">
+      </a>
+    </div>
+  </nav>
+
+  <div id="layoutSidenav">
+    <div id="layoutSidenav_nav">
+      <div class="sb-sidenav-menu">
+        <h5 class="text-info mb-3">Menu Utama</h5>
+        <a href="tekanan.html"><i class="fas fa-tachometer-alt me-2"></i> Logger</a>
+        <a href="maps.html"><i class="fas fa-map-marked-alt me-2"></i> GIS Master</a>
+        <a href="#"><i class="fas fa-chart-line me-2"></i> Monitoring</a>
+        <a href="#"><i class="fas fa-user-cog me-2"></i> Admin Panel</a>
+      </div>
+    </div>
+
+    <div id="layoutSidenav_content">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      sidebarToggle.addEventListener('click', () => {
+        document.body.classList.toggle('sb-sidenav-toggled');
+      });
+    });
+
+    const map = L.map('map').setView([-6.914744, 107.60981], 13);
+
+    const baseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; CartoDB'
+    });
+
+    const baseLayers = {
+      "Terang": baseMap,
+      "Gelap": darkMap
+    };
+
+    const urlGeojson = "https://script.google.com/macros/s/AKfycbzCdq5SJrXVFshviB5eQ7GKATxabW6vwgqXTsQ69qozP1e8smaI1Qk-uV8cM-0n0v1M/exec";
+
+    fetch(urlGeojson)
+      .then(res => res.json())
+      .then(data => {
+        if (data.geojson) {
+          const pelangganLayer = L.geoJSON(data.geojson, {
+            onEachFeature: (feature, layer) => {
+              layer.bindPopup(`
+                <b>${feature.properties.nama || 'Pelanggan'}</b><br>
+                Tekanan: ${feature.properties.tekanan || '-'} bar<br>
+                ID: ${feature.properties.id || '-'}
+              `);
+            },
+            pointToLayer: (feature, latlng) => {
+              return L.circleMarker(latlng, {
+                radius: 6,
+                fillColor: "#4db8ff",
+                color: "#fff",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+              });
+            }
+          }).addTo(map);
+          map.fitBounds(pelangganLayer.getBounds());
+        }
+      })
+      .catch(err => console.error("Gagal ambil data:", err));
+
+    L.control.layers(baseLayers).addTo(map);
+  </script>
+</body>
+</html>
