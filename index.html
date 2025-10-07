@@ -1,139 +1,133 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard PDAM Tirtawening</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
-  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard PDAM Tirtawening</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #0b1f3b;
-      color: #fff;
-      overflow-x: hidden;
-    }
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    /* Navbar */
-    nav.navbar {
-      background: linear-gradient(90deg, #0b1f3b, #133d74);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-      z-index: 1030;
-    }
+<style>
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: #0b1f3b;
+    color: #fff;
+    overflow-x: hidden;
+  }
 
-    /* Sidebar overlay style */
-    #sidebar {
-      position: fixed;
-      top: 0;
-      left: -260px;
-      width: 250px;
-      height: 100%;
-      background-color: #10284e;
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
-      transition: all 0.4s ease;
-      z-index: 1050;
-      padding-top: 60px;
-    }
+  nav.navbar {
+    background: linear-gradient(90deg, #0b1f3b, #133d74);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1030;
+  }
 
-    #sidebar.active {
-      left: 0;
-    }
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px;
+    width: 250px;
+    height: 100%;
+    background-color: #10284e;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
+    transition: all 0.4s ease;
+    z-index: 1050;
+    padding-top: 60px;
+  }
 
-    /* Overlay */
-    #overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.4);
-      z-index: 1040;
-    }
+  #sidebar.active {
+    left: 0;
+  }
 
-    #overlay.active {
-      display: block;
-    }
+  #overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1040;
+  }
 
-    /* Sidebar menu */
-    .sb-sidenav-menu {
-      padding: 15px;
-    }
+  #overlay.active {
+    display: block;
+  }
 
-    .sb-sidenav-menu a {
-      color: #c9d6e3;
-      text-decoration: none;
-      display: block;
-      padding: 10px 15px;
-      border-radius: 6px;
-      transition: 0.3s;
-    }
+  .sb-sidenav-menu {
+    padding: 15px;
+  }
 
-    .sb-sidenav-menu a:hover {
-      background-color: #1a3d70;
-      color: #4db8ff;
-    }
+  .sb-sidenav-menu a {
+    color: #c9d6e3;
+    text-decoration: none;
+    display: block;
+    padding: 10px 15px;
+    border-radius: 6px;
+    transition: 0.3s;
+  }
 
-    /* Map container */
-    #map {
-      height: calc(100vh - 56px);
-      width: 100%;
-      position: relative;
-      z-index: 1;
-    }
+  .sb-sidenav-menu a:hover {
+    background-color: #1a3d70;
+    color: #4db8ff;
+  }
 
-    /* Leaflet customizations */
-    .leaflet-popup-content-wrapper {
-      background: #10284e;
-      color: #e0e0e0;
-      border-radius: 10px;
-    }
+  #map {
+    height: calc(100vh - 56px);
+    width: 100%;
+  }
 
-    .leaflet-popup-tip {
-      background: #10284e;
-    }
+  .switch-container {
+    position: absolute;
+    top: 80px;
+    left: 10px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    padding: 6px;
+  }
+  body.dark .switch-container {background: rgba(0,0,0,0.7);}
+  .switch-btn {background: transparent; border: none; font-size: 1rem; cursor: pointer; border-radius: 8px; padding: 4px 8px; color: #222;}
+  .switch-btn.active {background: #007bff; color: #fff;}
+  body.dark .switch-btn {color: #fff;}
 
-    .leaflet-control-zoom a {
-      background-color: #133d74 !important;
-      color: #fff !important;
-      border: none !important;
-    }
+  .popup-card {width: 320px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); color: #000; font-size: 0.85rem;}
+  body.dark .popup-card {background: #10233f; color: #f2f2f2;}
+  .popup-header {padding: 10px 12px 4px; border-bottom: 1px solid #ddd;}
+  .popup-header h3 {margin: 0; font-size: 1.05rem; font-weight: 600;}
+  .menuju-lokasi {display: inline-block; font-size: 0.75rem; background: #c5f6c5; color: #2e7d32; border-radius: 20px; padding: 3px 10px; margin-top: 4px; text-decoration: none;}
+  .popup-body {padding: 10px 12px;}
+  .popup-status {display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
+  .status-label {padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; color: #fff;}
+  .belum {background: #f4b400;}
+  .tunggakan {background: #d93025;}
 
-    .leaflet-control-zoom a:hover {
-      background-color: #4db8ff !important;
-    }
+  .popup-tab {display: flex; border-bottom: 1px solid #ccc; font-size: 0.8rem; margin-bottom: 6px;}
+  .popup-tab div {flex: 1; text-align: center; padding: 6px 0; cursor: pointer;}
+  .popup-tab div.active {color: #4caf50; font-weight: 600; border-bottom: 2px solid #4caf50;}
+  .popup-section {display: none;}
+  .popup-section.active {display: block;}
+  .popup-section table {width: 100%; border-collapse: collapse; font-size: 0.8rem;}
+  .popup-section td {padding: 4px 6px; vertical-align: top;}
+  .popup-section td:first-child {color: #4caf50; font-weight: 500; width: 40%;}
 
-    .leaflet-control-layers {
-      background-color: rgba(16, 40, 78, 0.9);
-      color: #fff;
-      border-radius: 8px;
-    }
+  @media(max-width:600px){.popup-card{width:90vw;}}
 
-    @media (min-width: 992px) {
-      #sidebar {
-        left: 0;
-        position: relative;
-        height: calc(100vh - 56px);
-        box-shadow: none;
-      }
-
-      #overlay {
-        display: none !important;
-      }
-
-      #main-content {
-        margin-left: 250px;
-      }
-    }
-  </style>
+  @media(min-width:992px){
+    #sidebar {left: 0; position: relative; height: calc(100vh - 56px); box-shadow: none;}
+    #overlay {display: none !important;}
+    #main-content {margin-left: 250px;}
+  }
+</style>
 </head>
-
-<body>
-  <!-- Navbar -->
+<body class="light">
   <nav class="navbar navbar-dark fixed-top">
     <div class="container-fluid">
       <button class="btn btn-link text-white" id="sidebarToggle"><i class="fas fa-bars fa-lg"></i></button>
@@ -143,92 +137,113 @@
     </div>
   </nav>
 
-  <!-- Sidebar -->
   <div id="sidebar">
     <div class="sb-sidenav-menu">
       <h5 class="text-info mb-3 ps-2">Menu Utama</h5>
-      <a href="tekanan.html"><i class="fas fa-tachometer-alt me-2"></i> Logger</a>
-      <a href="maps.html"><i class="fas fa-map-marked-alt me-2"></i> GIS Master</a>
+      <a href="#"><i class="fas fa-map-marked-alt me-2"></i> GIS Dashboard</a>
+      <a href="#"><i class="fas fa-tachometer-alt me-2"></i> Logger</a>
       <a href="#"><i class="fas fa-chart-line me-2"></i> Monitoring</a>
       <a href="#"><i class="fas fa-user-cog me-2"></i> Admin Panel</a>
     </div>
   </div>
 
-  <!-- Overlay -->
   <div id="overlay"></div>
 
-  <!-- Map -->
   <div id="main-content">
     <div id="map"></div>
+    <div class="switch-container">
+      <button id="lightBtn" class="switch-btn active">☀️</button>
+      <button id="darkBtn" class="switch-btn">🌙</button>
+      <button id="satBtn" class="switch-btn">🛰️</button>
+    </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // Sidebar toggle
-    document.addEventListener('DOMContentLoaded', function () {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('overlay');
-      const toggle = document.getElementById('sidebarToggle');
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  const toggle = document.getElementById('sidebarToggle');
 
-      toggle.addEventListener('click', function () {
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
-      });
+  toggle.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+  });
 
-      overlay.addEventListener('click', function () {
-        sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-      });
-    });
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+  });
+});
 
-    // Leaflet map
-    const map = L.map('map').setView([-6.914744, 107.60981], 13);
+const scriptURL="https://script.google.com/macros/s/AKfycbz3X15bIek1QQ2HaOfNTH55wFyZD0HLTebtYSeKtnbda2VLqTy32-uhY_R2O3X9ZmQ7RQ/exec";
 
-    const baseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+const map=L.map('map').setView([-6.9457,107.6093],13);
+const baseLayers={
+  light:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+  dark:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
+  sat:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
+};
+baseLayers.light.addTo(map);
 
-    const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; CartoDB'
-    });
+let pelangganLayer;
+async function loadData(){
+  const res=await fetch(scriptURL);
+  const data=await res.json();
+  if(pelangganLayer) map.removeLayer(pelangganLayer);
 
-    const baseLayers = {
-      "Terang": baseMap,
-      "Gelap": darkMap
-    };
+  pelangganLayer=L.geoJSON(data,{
+    pointToLayer:(f,latlng)=>L.circleMarker(latlng,{radius:7,fillColor:"#4db8ff",color:"#fff",weight:1,fillOpacity:0.9}),
+    onEachFeature:(f,layer)=>{
+      const p=f.properties;
+      const statusClass=(p["Status Billing"]||"").toLowerCase().includes("nunggak")?"tunggakan":"belum";
+      const popupHTML=`<div class="popup-card">
+        <div class="popup-header">
+          <h3>${p.Nama||"Pelanggan"} <small>${p.ID||""}</small></h3>
+          <a class="menuju-lokasi" target="_blank" href="https://www.google.com/maps?q=${p.Latitude},${p.Longtitude}">📍 Menuju Lokasi</a>
+        </div>
+        <div class="popup-body">
+          <div class="popup-status">
+            <div>Tagihan Air: <b>Rp ${p.Tagihan||0}</b></div>
+            <div class="status-label ${statusClass}">${p["Status Billing"]||"Belum Terbayar"}</div>
+          </div>
+          <div class="popup-tab">
+            <div class="tab-btn active" data-tab="detail">Pelanggan</div>
+            <div class="tab-btn" data-tab="tagihan">Tagihan</div>
+            <div class="tab-btn" data-tab="foto">Foto</div>
+          </div>
+          <div class="popup-section active" id="detail">
+            <table>
+              <tr><td>Golongan</td><td>${p.Golongan||"-"}</td></tr>
+              <tr><td>Status</td><td>${p["Status Pelanggan"]||"-"}</td></tr>
+              <tr><td>Alamat</td><td>${p.Alamat||"-"}</td></tr>
+              <tr><td>Kelurahan</td><td>${p.Kelurahan||"-"}</td></tr>
+              <tr><td>Kecamatan</td><td>${p.Kecamatan||"-"}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>`;
+      layer.bindPopup(popupHTML);
+    }
+  }).addTo(map);
+  map.fitBounds(pelangganLayer.getBounds());
+}
+loadData();
 
-    const urlGeojson = "https://script.google.com/macros/s/AKfycbzCdq5SJrXVFshviB5eQ7GKATxabW6vwgqXTsQ69qozP1e8smaI1Qk-uV8cM-0n0v1M/exec";
-
-    fetch(urlGeojson)
-      .then(res => res.json())
-      .then(data => {
-        if (data.geojson) {
-          const pelangganLayer = L.geoJSON(data.geojson, {
-            onEachFeature: (feature, layer) => {
-              layer.bindPopup(`
-                <b>${feature.properties.nama || 'Pelanggan'}</b><br>
-                Tekanan: ${feature.properties.tekanan || '-'} bar<br>
-                ID: ${feature.properties.id || '-'}
-              `);
-            },
-            pointToLayer: (feature, latlng) => {
-              return L.circleMarker(latlng, {
-                radius: 6,
-                fillColor: "#4db8ff",
-                color: "#fff",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
-              });
-            }
-          }).addTo(map);
-          map.fitBounds(pelangganLayer.getBounds());
-        }
-      })
-      .catch(err => console.error("Gagal ambil data:", err));
-
-    L.control.layers(baseLayers).addTo(map);
-  </script>
+const lightBtn=document.getElementById('lightBtn');
+const darkBtn=document.getElementById('darkBtn');
+const satBtn=document.getElementById('satBtn');
+function setActive(btn){[lightBtn,darkBtn,satBtn].forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function setBase(mode,btn){
+  Object.values(baseLayers).forEach(l=>map.removeLayer(l));
+  setActive(btn);
+  if(mode==="light"){baseLayers.light.addTo(map);document.body.className="light";}
+  else if(mode==="dark"){baseLayers.dark.addTo(map);document.body.className="dark";}
+  else{baseLayers.sat.addTo(map);document.body.className="light";}
+}
+lightBtn.onclick=()=>setBase("light",lightBtn);
+darkBtn.onclick=()=>setBase("dark",darkBtn);
+satBtn.onclick=()=>setBase("sat",satBtn);
+</script>
 </body>
 </html>
