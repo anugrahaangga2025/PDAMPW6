@@ -36,50 +36,68 @@
   .status-label{padding:2px 8px;border-radius:10px;font-size:0.75rem;color:#fff;}
   .belum{background:#f4b400;}
   .tunggakan{background:#d93025;}
-
   .popup-tab{display:flex;border-bottom:1px solid #ccc;font-size:0.8rem;margin-bottom:6px;}
   .popup-tab div{flex:1;text-align:center;padding:6px 0;cursor:pointer;}
   .popup-tab div.active{color:#4caf50;font-weight:600;border-bottom:2px solid #4caf50;}
   .popup-section{display:none;}
   .popup-section.active{display:block;}
-
   .popup-section table{width:100%;border-collapse:collapse;font-size:0.8rem;}
   .popup-section td{padding:4px 6px;vertical-align:top;}
   .popup-section td:first-child{color:#4caf50;font-weight:500;width:40%;}
   @media(max-width:600px){.popup-card{width:90vw;}}
+
+  /* search kanan atas */
+  .search-box {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 9999;
+    background: rgba(255,255,255,0.95);
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .search-box input {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 8px;
+    width: 180px;
+  }
+  .search-box button {
+    background: #007bff;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .search-box button:hover {
+    background: #0056b3;
+  }
 </style>
 </head>
 <body class="light">
+
+<!-- 🔍 Search pelanggan -->
+<div class="search-box">
+  <input type="text" id="searchNama" placeholder="Cari nama pelanggan..." />
+  <button id="btnCari">Cari</button>
+</div>
+
 <div id="map"></div>
 
 <div class="switch-container">
-  <div class="switch-item">
-    ☀️
-    <label class="switch">
-      <input type="radio" name="mapmode" id="lightBtn" checked>
-      <span class="slider"></span>
-    </label>
-  </div>
-  <div class="switch-item">
-    🌙
-    <label class="switch">
-      <input type="radio" name="mapmode" id="darkBtn">
-      <span class="slider"></span>
-    </label>
-  </div>
-  <div class="switch-item">
-    🛰️
-    <label class="switch">
-      <input type="radio" name="mapmode" id="satBtn">
-      <span class="slider"></span>
-    </label>
-  </div>
+  <div class="switch-item"><input type="radio" name="mapmode" id="lightBtn" checked></div>
+  <div class="switch-item"><input type="radio" name="mapmode" id="darkBtn"></div>
+  <div class="switch-item"><input type="radio" name="mapmode" id="satBtn"></div>
 </div>
 
 <script>
 const scriptURL="https://script.google.com/macros/s/AKfycbz3X15bIek1QQ2HaOfNTH55wFyZD0HLTebtYSeKtnbda2VLqTy32-uhY_R2O3X9ZmQ7RQ/exec";
-
-const map=L.map('map').setView([-6.945702230371395, 107.6093796122096],13);
+const map=L.map('map').setView([-6.9457,107.6093],13);
 const baseLayers={
   light:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
   dark:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
@@ -88,6 +106,8 @@ const baseLayers={
 baseLayers.light.addTo(map);
 
 let pelangganLayer;
+const markers = []; // 🟢 array global untuk semua marker pelanggan
+
 async function loadData(){
   const res=await fetch(scriptURL);
   const data=await res.json();
@@ -96,122 +116,52 @@ async function loadData(){
   pelangganLayer=L.geoJSON(data,{
     pointToLayer:(f,latlng)=>L.circleMarker(latlng,{radius:7,fillColor:"#4db8ff",color:"#fff",weight:1,fillOpacity:0.9}),
     onEachFeature:(f,layer)=>{
-      layer.on("popupopen", async ()=>{
-  const popup = layer.getPopup().getElement();
-  const aduanDiv = popup.querySelector(`#aduanList-${p.ID}`);
-
-  try {
-    const res = await fetch(`${scriptURL}?mode=pengaduan&id=${p.ID}`);
-    const data = await res.json();
-    if(data.length === 0) {
-      aduanDiv.innerHTML = "<p>Tidak ada pengaduan pelanggan ini.</p>";
-    } else {
-      aduanDiv.innerHTML = data.map(a=>`
-        <div style="border-bottom:1px solid #ccc;padding:4px 0;">
-          <b>${a.jenis}</b> <span style="color:gray;font-size:0.8em">(${a.tanggal})</span><br>
-          ${a.deskripsi}<br>
-          <span style="color:${a.status==='Baru'?'red':'green'}">${a.status}</span>
-        </div>
-      `).join("");
-    }
-  } catch(err){
-    aduanDiv.innerHTML = "Gagal memuat data.";
-  }
-});
-
       const p=f.properties;
       const statusClass=(p["Status Billing"]||"").toLowerCase().includes("nunggak")?"tunggakan":"belum";
 
-      // Foto Rumah (link)
-      const fotoUrl = p["Foto Rumah"] || "";
-      let fotoHTML = "<p>Tidak ada foto rumah.</p>";
-      if (fotoUrl) {
-        fotoHTML = `
-          <div style="text-align:center;">
-            <img src="${fotoUrl}" alt="Foto Rumah"
-                 style="max-width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:6px;"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" />
-            <a href="${fotoUrl}" target="_blank"
-               style="display:none;font-size:0.85rem;color:#007bff;">📷 Lihat Foto</a>
+      const popupHTML=`
+        <div class="popup-card">
+          <div class="popup-header">
+            <h3>${p.Nama||"Pelanggan"} <small>${p.ID||""}</small></h3>
+            <a class="menuju-lokasi" target="_blank" href="https://www.google.com/maps?q=${p.Latitude},${p.Longtitude}">📍 Menuju Lokasi</a>
           </div>
-        `;
+          <div class="popup-body">
+            <div class="popup-status">
+              <div>Tagihan Air: <b>Rp ${p.Tagihan||0}</b></div>
+              <div class="status-label ${statusClass}">${p["Status Billing"]||"Belum Terbayar"}</div>
+            </div>
+            <div class="popup-tab">
+              <div class="tab-btn active" data-tab="detail">Pelanggan</div>
+              <div class="tab-btn" data-tab="tagihan">Tagihan</div>
+              <div class="tab-btn" data-tab="foto">Foto</div>
+            </div>
+            <div class="popup-section active" id="detail">
+              <table>
+                <tr><td>Alamat</td><td>${p.Alamat||"-"}</td></tr>
+                <tr><td>Kelurahan</td><td>${p.Kelurahan||"-"}</td></tr>
+                <tr><td>Kecamatan</td><td>${p.Kecamatan||"-"}</td></tr>
+              </table>
+            </div>
+            <div class="popup-section" id="tagihan">
+              <table>
+                <tr><td>Tagihan</td><td>Rp ${p.Tagihan||0}</td></tr>
+                <tr><td>Status Billing</td><td>${p["Status Billing"]||"-"}</td></tr>
+              </table>
+            </div>
+            <div class="popup-section" id="foto">
+              ${p["Foto Rumah"]?`<img src="${p["Foto Rumah"]}" style="width:100%;border-radius:8px;">`:"<p>Tidak ada foto.</p>"}
+            </div>
+          </div>
+        </div>`;
+      layer.bindPopup(popupHTML);
+
+      // 🟢 simpan nama ke marker
+      if (p.Nama) {
+        layer.nama = p.Nama.toLowerCase();
+        markers.push(layer);
       }
 
-      const popupHTML=`
-      <div class="popup-card">
-        <div class="popup-header">
-          <h3>${p.Nama||"Pelanggan"} <small>${p.ID||""}</small></h3>
-          <a class="menuju-lokasi" target="_blank" href="https://www.google.com/maps?q=${p.Latitude},${p.Longtitude}">📍 Menuju Lokasi</a>
-        </div>
-        <div class="popup-body">
-          <div class="popup-status">
-            <div>Tagihan Air: <b>Rp ${p.Tagihan||0}</b></div>
-            <div class="status-label ${statusClass}">${p["Status Billing"]||"Belum Terbayar"}</div>
-          </div>
-
-          <div class="popup-tab">
-            <div class="tab-btn active" data-tab="detail">Pelanggan</div>
-            <div class="tab-btn" data-tab="tagihan">Tagihan</div>
-            <div class="tab-btn" data-tab="pengaduan">Pengaduan</div>
-            <div class="tab-btn" data-tab="foto">Foto</div>
-          </div>
-
-          <div class="popup-section active" id="detail">
-            <table>
-              <tr><td>Golongan</td><td>${p.Golongan||"-"}</td></tr>
-              <tr><td>Status</td><td>${p["Status Planggan"]||"-"}</td></tr>
-              <tr><td>Alamat</td><td>${p.Alamat||"-"}</td></tr>
-              <tr><td>Kelurahan</td><td>${p.Kelurahan||"-"}</td></tr>
-              <tr><td>Kecamatan</td><td>${p.Kecamatan||"-"}</td></tr>
-              <tr><td>Kota/Kabupaten</td><td>${p["Wilayah Pelayanan"]||"-"}</td></tr>
-            </table>
-          </div>
-
-          <div class="popup-section" id="tagihan">
-            <table>
-              <tr><td>Tagihan</td><td>Rp ${p.Tagihan||0}</td></tr>
-              <tr><td>Pemakaian</td><td>${p.Pemakaian||0} m³</td></tr>
-              <tr><td>Status Billing</td><td>${p["Status Billing"]||"-"}</td></tr>
-              <tr><td>Tunggakan</td><td>Rp ${p.Tunggakan||0}</td></tr>
-              <tr><td>Due Date</td><td>${p["Due Date"]||"-"}</td></tr>
-              <tr><td>Tanggal Bayar</td><td>${p["Tanggal Bayar"]||"-"}</td></tr>
-              <tr><td>Loket Bayar</td><td>${p["Loket Bayar"]||"-"}</td></tr>
-            </table>
-          </div>
-
-         <div class="popup-section" id="pengaduan">
-  <div id="aduanList-${p.pengaduan}">Memuat data pengaduan...</div>
-</div>
-
-          <div class="popup-section" id="foto">
-            ${fotoHTML}
-          </div>
-        </div>
-      </div>`;
-
-      layer.bindPopup(popupHTML);
-      layer.on("popupopen", async ()=>{
-  const popup = layer.getPopup().getElement();
-  const aduanDiv = popup.querySelector(`#aduanList-${p.pengaduan}`);
-  try {
-    const res = await fetch(`${scriptURL}?mode=pengaduan&id=${p.pengaduan}`);
-    const data = await res.json();
-    if(data.length === 0) {
-      aduanDiv.innerHTML = "<p>Tidak ada pengaduan pelanggan ini.</p>";
-    } else {
-      aduanDiv.innerHTML = data.map(a=>`
-        <div style="border-bottom:1px solid #ccc;padding:4px 0;">
-          <b>${a.jenis}</b> (${a.tanggal})<br>
-          ${a.deskripsi}<br>
-          <span style="color:${a.status==='Baru'?'red':'green'}">${a.status}</span>
-        </div>
-      `).join("");
-    }
-  } catch(err){
-    aduanDiv.innerHTML = "Gagal memuat data.";
-  }
-});
-
+      // aktifkan tab popup
       layer.on("popupopen",()=>{
         const popup=layer.getPopup().getElement();
         const tabs=popup.querySelectorAll(".tab-btn");
@@ -231,15 +181,30 @@ async function loadData(){
 }
 loadData();
 
-// switch
+// 🟢 SEARCH NAMA PELANGGAN
+function cariNama() {
+  const input = document.getElementById("searchNama").value.toLowerCase();
+  if (!input) return;
+  const found = markers.find(m => m.nama && m.nama.includes(input));
+  if (found) {
+    map.flyTo(found.getLatLng(), 17, { duration: 1.2 });
+    found.openPopup();
+  } else {
+    alert("Nama pelanggan tidak ditemukan!");
+  }
+}
+document.getElementById("btnCari").addEventListener("click", cariNama);
+document.getElementById("searchNama").addEventListener("keypress", e => {
+  if (e.key === "Enter") cariNama();
+});
+
+// switch layer
 const lightBtn=document.getElementById('lightBtn');
 const darkBtn=document.getElementById('darkBtn');
 const satBtn=document.getElementById('satBtn');
 const allBtns=[lightBtn,darkBtn,satBtn];
-function setActive(btn){allBtns.forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
 function setBase(mode,btn){
   for(let key in baseLayers){if(map.hasLayer(baseLayers[key])) map.removeLayer(baseLayers[key]);}
-  setActive(btn);
   if(mode==="light"){baseLayers.light.addTo(map);document.body.className="light";}
   else if(mode==="dark"){baseLayers.dark.addTo(map);document.body.className="dark";}
   else{baseLayers.sat.addTo(map);document.body.className="light";}
