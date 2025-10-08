@@ -34,7 +34,7 @@
   .popup-body{padding:10px 12px;}
   .popup-status{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
   .status-label{padding:2px 8px;border-radius:10px;font-size:0.75rem;color:#fff;}
-  .belum{background:#f4b400;}
+  .sudah{background:#00f43d;}
   .tunggakan{background:#d93025;}
   .popup-tab{display:flex;border-bottom:1px solid #ccc;font-size:0.8rem;margin-bottom:6px;}
   .popup-tab div{flex:1;text-align:center;padding:6px 0;cursor:pointer;}
@@ -96,6 +96,11 @@
 </div>
 
 <script>
+  // 🔢 Format angka ke Rupiah
+function formatRupiah(angka) {
+  if (!angka || isNaN(angka)) return "Rp 0";
+  return "Rp " + Number(angka).toLocaleString("id-ID");
+}
 const scriptURL="https://script.google.com/macros/s/AKfycbz3X15bIek1QQ2HaOfNTH55wFyZD0HLTebtYSeKtnbda2VLqTy32-uhY_R2O3X9ZmQ7RQ/exec";
 const map=L.map('map').setView([-6.9457,107.6093],13);
 const baseLayers={
@@ -117,7 +122,8 @@ async function loadData(){
     pointToLayer:(f,latlng)=>L.circleMarker(latlng,{radius:7,fillColor:"#4db8ff",color:"#fff",weight:1,fillOpacity:0.9}),
     onEachFeature:(f,layer)=>{
       const p=f.properties;
-      const statusClass=(p["Status Billing"]||"").toLowerCase().includes("nunggak")?"tunggakan":"belum";
+      const statusClass=(p["Status Planggan"]||"").toLowerCase().includes("nunggak")?"tunggakan":"sudah";
+      
 
       const popupHTML=`
         <div class="popup-card">
@@ -127,8 +133,9 @@ async function loadData(){
           </div>
           <div class="popup-body">
             <div class="popup-status">
-              <div>Tagihan Air: <b>Rp ${p.Tagihan||0}</b></div>
-              <div class="status-label ${statusClass}">${p["Status Billing"]||"Belum Terbayar"}</div>
+              <div>Pemakaian: <b>${formatMeterKubik(p.Pemakaian)}</b></div>
+              <div class="status-label ${statusClass}">${p["Status Planggan"]||"Belum Terbayar"}</div>
+              
             </div>
             <div class="popup-tab">
               <div class="tab-btn active" data-tab="detail">Pelanggan</div>
@@ -144,8 +151,11 @@ async function loadData(){
             </div>
             <div class="popup-section" id="tagihan">
               <table>
-                <tr><td>Tagihan</td><td>Rp ${p.Tagihan||0}</td></tr>
-                <tr><td>Status Billing</td><td>${p["Status Billing"]||"-"}</td></tr>
+                <tr><td>Tagihan</td><td>${formatRupiah(p.Tagihan)}</td></tr>
+                <tr><td>Status</td><td>${p.StatusBilling||"-"}</td></tr>
+                <tr><td>Tunggakan</td><td>${formatRupiah(p.Tunggakan)}</td></tr>
+                <tr><td>Keterangan Cater</td><td>${p.Ketcatat||"-"}</td></tr>
+
               </table>
             </div>
             <div class="popup-section" id="foto">
@@ -178,6 +188,11 @@ async function loadData(){
     }
   }).addTo(map);
   map.fitBounds(pelangganLayer.getBounds());
+// 🔢 Format angka ke satuan m³ (meter kubik)
+function formatMeterKubik(angka) {
+  if (!angka || isNaN(angka)) return "0 m³";
+  return Number(angka).toLocaleString("id-ID") + " m³";
+}
 }
 loadData();
 
