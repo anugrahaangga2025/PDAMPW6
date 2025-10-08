@@ -101,7 +101,7 @@ function formatRupiah(angka) {
   if (!angka || isNaN(angka)) return "Rp 0";
   return "Rp " + Number(angka).toLocaleString("id-ID");
 }
-const scriptURL="https://script.google.com/macros/s/AKfycbz3X15bIek1QQ2HaOfNTH55wFyZD0HLTebtYSeKtnbda2VLqTy32-uhY_R2O3X9ZmQ7RQ/exec";
+const scriptURL="https://script.google.com/macros/s/AKfycbydEXwuG8sG4x4nsWb4VV3M8rMXWdXAyhiq287d47fr_WSis0-Boht7_pxQF1dlGeqf0Q/exec?mode=pelanggan";
 const map=L.map('map').setView([-6.9457,107.6093],13);
 const baseLayers={
   light:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -227,6 +227,228 @@ function setBase(mode,btn){
 lightBtn.onclick=()=>setBase("light",lightBtn);
 darkBtn.onclick=()=>setBase("dark",darkBtn);
 satBtn.onclick=()=>setBase("sat",satBtn);
+// 🕒 AUTO REFRESH SETIAP 1 MENIT TANPA TAMPILAN
+setInterval(() => {
+  console.log("⟳ Auto-refresh data pelanggan...");
+  loadData(); // panggil ulang data
+}, 60000); // 60000 ms = 1 menit
+
 </script>
+<!-- 🔔 Tambah elemen suara & toast -->
+<audio id="notifSound" preload="auto">
+  <source src="https://assets.mixkit.co/sfx/download/mixkit-correct-answer-tone-2870.wav" type="audio/wav">
+</audio>
+
+<style>
+/* Toast Notification Style */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #0078FF;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.4s ease;
+  z-index: 9999;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Blinking marker */
+.blink-marker {
+  animation: blink 1.5s infinite ease-in-out;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+</style>
+
+<script>
+// 🔹 Global untuk simpan tiket baru
+let shownTickets = new Set();
+
+// 🔹 Fungsi buat tampilkan toast
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 100);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 500);
+  }, 4000);
+}
+
+// 🔹 Fungsi main popup aduan
+function popupAduan(p) {
+  const status = p.Status || "Baru";
+  const statusClass =
+    status === "Baru" ? "status-baru" :
+    status === "Proses" ? "status-proses" :
+    "status-selesai";
+  const id = p.Tiket || Math.random().toString(36).substring(2,7);
+
+  return `
+    <div class="${status === "Baru" ? "blink-marker" : ""}">
+      <div class="popup-card">
+        <div class="popup-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="margin:0;font-size:15px;color:#0078FF;">
+            ${p["Nama Pelanggan"] || "Pelanggan"}
+            <small style="color:#999;font-size:12px;">${p.Tiket || ""}</small>
+          </h3>
+          <a href="https://www.google.com/maps?q=${p["Lokasi Gangguan"]}"
+             target="_blank"
+             style="font-size:12px;color:#0078FF;text-decoration:none;">📍 Lokasi</a>
+        </div>
+
+        <div class="popup-tabs" style="display:flex;margin-top:8px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+          <div class="popup-tab-btn active" data-tab="detail-${id}" style="flex:1;text-align:center;font-size:12px;padding:4px;cursor:pointer;">🧾 Detail</div>
+          <div class="popup-tab-btn" data-tab="keterangan-${id}" style="flex:1;text-align:center;font-size:12px;padding:4px;cursor:pointer;">💬 Keterangan</div>
+        </div>
+
+        <div id="detail-${id}" class="popup-content">
+          <p style="margin:2px 0 8px 0;color:#777;font-size:12px;font-style:italic;">
+          ${p.Tanggal ? new Date(p.Tanggal).toLocaleString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: "Asia/Jakarta"
+        }) + " WIB"
+      : "-"
+  } <span style="padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;
+              background:${
+                status==="Baru"?"#ffebee":status==="Proses"?"#fff6da":"#e8f5e9"
+              };
+              color:${
+                status==="Baru"?"#e53935":status==="Proses"?"#f9a825":"#2e7d32"
+              };">${status}</span>
+</p>
+          <div><b>Jenis Keluhan:</b> ${p["Jenis Keluhan"] || "-"}</div>
+           <div><b>NoLan:</b> ${p["NomorPelanggan"] || "-"}</div>
+          <div><b>Telpon:</b> ${p["Nomor Kontak"] || "-"}</div>
+          <div><b>Alamat:</b> ${p["Alamat"] || "-"}</div>
+        </div>
+
+        <div id="keterangan-${id}" class="popup-content hide" style="display:none;">
+          <b>Keluhan:</b><br>
+          <div style="white-space:pre-wrap;margin-bottom:6px;">${p["Keterangan"] || "-"}</div>
+          ${
+            p["Dokumentasi Pengaduan"]
+              ? `<img src="${p["Dokumentasi Pengaduan"]}" style="width:100%;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">`
+              : `<p style="font-size:12px;color:#888;text-align:center;">Tidak ada foto</p>`
+          }
+        </div>
+      </div>
+    </div>
+    <script>
+      document.querySelectorAll('.popup-tab-btn').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const tabId=btn.getAttribute('data-tab');
+          const parent=btn.closest('.popup-card');
+          parent.querySelectorAll('.popup-tab-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          parent.querySelectorAll('.popup-content').forEach(c=>c.style.display='none');
+          parent.querySelector('#'+tabId).style.display='block';
+        });
+      });
+    <\/script>
+  `;
+}
+
+// 🔹 Fungsi load data pengaduan
+async function loadAduan() {
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbz5ZFftu5HERETjyT25WSdIbz8Va0zqoCv4We3OpDIqi09vpWEO7814ZE2Llu2dNj5kJA/exec?mode=aduan");
+    const data = await res.json();
+    data.sort((a,b)=>new Date(a.Tanggal)-new Date(b.Tanggal));
+
+    if(window.aduanLayer) map.removeLayer(window.aduanLayer);
+    window.aduanLayer = L.layerGroup().addTo(map);
+
+    const audio = document.getElementById("notifSound");
+
+    data.forEach(p=>{
+      const lokasi = p["Lokasi Gangguan"];
+      const status = p.Status || "";
+      if(!lokasi || status==="Selesai") return;
+
+      const [lat,lng] = lokasi.split(",").map(Number);
+      if(isNaN(lat)||isNaN(lng)) return;
+
+      // 🔔 Deteksi tiket baru
+      if(!shownTickets.has(p.Tiket)){
+        shownTickets.add(p.Tiket);
+        if(status==="Baru"){
+          audio.currentTime = 0;
+          audio.play().catch(()=>{});
+          showToast(`🔔 Aduan baru: ${p["Nama Pelanggan"] || "Pelanggan"} (${p.Tiket})`);
+        }
+      }
+
+      const warna = status==="Baru"?"#ff3333":status==="Proses"?"#FFD93D":"#2ECC71";
+      const iconHTML = `
+        <div class="${status==="Baru"?"blink-marker":""}"
+             style="width:18px;height:18px;background:${warna};
+             border:2px solid #fff;border-radius:50%;
+             box-shadow:0 0 6px rgba(0,0,0,0.4);">
+        </div>`;
+
+      const marker = L.marker([lat,lng],{
+        icon:L.divIcon({className:"",html:iconHTML,iconSize:[18,18],iconAnchor:[9,9]})
+      }).addTo(window.aduanLayer);
+
+      marker.bindPopup(popupAduan(p));
+      if(status==="Baru") marker.openPopup();
+    });
+
+  } catch(err){
+    console.error("❌ Gagal memuat data:",err);
+  }
+}
+
+loadAduan();
+
+// === Aktifin tab Detail / Keterangan di setiap popup ===
+map.on("popupopen", (e) => {
+  const popupNode = e.popup.getElement();
+  if (!popupNode) return;
+
+  const btns = popupNode.querySelectorAll(".popup-tab-btn");
+  btns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tabId = btn.getAttribute("data-tab");
+      const parent = btn.closest(".popup-card");
+      if (!parent) return;
+
+      // nonaktifin semua tombol
+      parent.querySelectorAll(".popup-tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      // sembunyikan semua isi tab
+      parent.querySelectorAll(".popup-content").forEach((c) => (c.style.display = "none"));
+      const showTab = parent.querySelector(`#${tabId}`);
+      if (showTab) showTab.style.display = "block";
+    });
+  });
+});
+
+
+setInterval(loadAduan, 30000);
+</script>
+
+
 </body>
 </html>

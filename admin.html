@@ -1,126 +1,179 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Aduan - PDAM</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Pengaduan PDAM</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { background:#1a1d20; color:#eee; font-family:'Poppins',sans-serif; }
-    header { background:linear-gradient(90deg,#004b8d,#007bff); color:#fff; text-align:center; padding:15px; font-weight:600; position:relative; }
-    .container { max-width:1200px; margin-top:30px; }
-    .table-dark th { background-color:#007bff; }
-    .table-dark tr:hover { background-color:#2b3035!important; }
-    .status-badge { padding:6px 10px; border-radius:8px; font-size:13px; font-weight:600; text-transform:capitalize; }
-    .baru{background:#ffc107;color:#222;} 
-    .proses{background:#17a2b8;color:#fff;} 
-    .selesai{background:#28a745;color:#fff;}
-    .logout{position:absolute;right:20px;top:15px;background:#dc3545;border:none;padding:5px 10px;border-radius:5px;color:white;font-size:13px;}
+    body { background: #f4f6f9; font-family: "Poppins", sans-serif; }
+    .navbar { background: #0d6efd; }
+    .navbar-brand, .nav-link { color: #fff !important; font-weight: 500; }
+    .table thead { background: #0d6efd; color: white; }
+    td select { border: 1px solid #ccc; border-radius: 4px; padding: 2px 6px; }
+    .status-Baru { background: #fff3cd; }
+    .status-Proses { background: #cfe2ff; }
+    .status-Selesai { background: #d1e7dd; }
+    #refreshInfo { font-size: 13px; color: #6c757d; text-align: right; }
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
   </style>
 </head>
+
 <body>
-  <header>
-    💧 Dashboard Aduan Pelanggan
-    <button class="logout" onclick="logout()">Logout</button>
-  </header>
+  <!-- 🔹 NAVBAR -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">💧 Admin PDAM</a>
+      <div class="d-flex">
+        <a class="btn btn-light btn-sm" href="index.html">🏠 Dashboard</a>
+      </div>
+    </div>
+  </nav>
 
-  <div class="container">
-    <h3 class="mb-3">📋 Daftar Aduan</h3>
-    <div id="loading">Memuat data...</div>
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h4 class="text-primary">📋 Data Pengaduan Pelanggan</h4>
+      <div class="d-flex align-items-center gap-2">
+        <select id="statusFilter" class="form-select form-select-sm">
+          <option value="all">Tampilkan Semua</option>
+          <option value="Baru">Belum Ditangani (Baru)</option>
+          <option value="Proses">Sedang Proses</option>
+          <option value="Selesai">Sudah Selesai</option>
+        </select>
+        <span id="refreshInfo">Auto refresh setiap 30 detik ⏳</span>
+      </div>
+    </div>
 
+    <!-- 🔹 TABEL PENGADUAN -->
     <div class="table-responsive">
-      <table class="table table-dark table-striped" id="aduanTable" style="display:none;">
+      <table class="table table-bordered align-middle text-center" id="pengaduanTable">
         <thead>
           <tr>
+            <th>Tiket</th>
             <th>Tanggal</th>
+            <th>Jenis</th>
+            <th>No. Pelanggan</th>
             <th>Nama</th>
-            <th>Aduan</th>
+            <th>Alamat</th>
+            <th>Kontak</th>
+            <th>Keterangan</th>
+            <th>Lokasi</th>
+            <th>Foto</th>
             <th>Status</th>
-            <th>Aksi</th>
           </tr>
         </thead>
-        <tbody id="aduanBody"></tbody>
+        <tbody></tbody>
       </table>
     </div>
+
+    <h4 class="mt-5 mb-3 text-primary">📈 Rekap Pengaduan Mingguan</h4>
+    <canvas id="chartRekap" height="120"></canvas>
   </div>
 
+  <!-- 🔹 Toast Notification -->
+  <div class="toast-container"></div>
+
   <script>
-    // === CEK LOGIN ===
-    if (localStorage.getItem("auth") !== "true") {
-      window.location.href = "login.html";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwvstbCWOP980fxqNOHQ-pgjcjlieXMtLXi7BVbKPGkUNFyGawAWYzBlqm-gEdkcy3kpw/exec";
+    let allData = [];
+    let chartInstance = null;
+
+    async function loadPengaduan(showToast = true) {
+      const res = await fetch(`${SCRIPT_URL}?mode=aduan`);
+      allData = await res.json();
+      renderTable(allData);
+      drawChart(allData);
+
+      const now = new Date().toLocaleTimeString("id-ID");
+      document.getElementById("refreshInfo").textContent = "Terakhir diperbarui: " + now;
+
+      if (showToast) showNotification(`✅ Data diperbarui otomatis — ${now}`);
     }
 
-    // 🔗 GANTI DENGAN URL WEB APP KAMU (akhiran /exec)
-    const sheetURL = "https://script.google.com/macros/s/AKfycbzk_h3u-dctLEMBeRZYg1p9ply5ETTzgdhY06uegNk8jGoZhlThOuqm6Z_4_hwaRDSF/exec";
-
-    const table = document.getElementById("aduanTable");
-    const tbody = document.getElementById("aduanBody");
-    const loading = document.getElementById("loading");
-
-    async function loadData() {
-      loading.style.display = "block";
-      table.style.display = "none";
+    function renderTable(data) {
+      const filter = document.getElementById("statusFilter").value;
+      const tbody = document.querySelector("#pengaduanTable tbody");
       tbody.innerHTML = "";
 
-      try {
-        const res = await fetch(sheetURL);
-        const data = await res.json();
+      const filtered = data.filter(d => filter === "all" || d.Status === filter);
 
-        if (!data.length) {
-          loading.textContent = "Belum ada data aduan.";
-          return;
-        }
+      filtered.forEach(d => {
+        const row = document.createElement("tr");
+        row.classList.add(`status-${d.Status || 'Baru'}`);
 
-        data.forEach((row, i) => {
-          const status = (row.status || "baru").toLowerCase();
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${row.tanggal || "-"}</td>
-            <td>${row.nama || "-"}</td>
-            <td>${row.aduan || "-"}</td>
-            <td><span class="status-badge ${status}">${status}</span></td>
-            <td>
-              <select class="form-select form-select-sm" onchange="updateStatus(${i}, this.value)">
-                <option value="baru" ${status=="baru"?"selected":""}>Baru</option>
-                <option value="proses" ${status=="proses"?"selected":""}>Diproses</option>
-                <option value="selesai" ${status=="selesai"?"selected":""}>Selesai</option>
-              </select>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        loading.style.display = "none";
-        table.style.display = "table";
-      } catch (err) {
-        loading.textContent = "Gagal memuat data!";
-      }
+        row.innerHTML = `
+          <td>${d.Tiket}</td>
+          <td>${d.Tanggal}</td>
+          <td>${d.Jenis}</td>
+          <td>${d["Nomor Pelanggan"]}</td>
+          <td>${d["Nama Pelanggan"]}</td>
+          <td>${d.Alamat}</td>
+          <td>${d["Nomor Kontak"]}</td>
+          <td>${d.Keterangan}</td>
+          <td><a href="https://www.google.com/maps?q=${d.Lokasi}" target="_blank">📍</a></td>
+          <td>${d.Dokumentasi ? `<a href="${d.Dokumentasi}" target="_blank">🖼️</a>` : "-"}</td>
+          <td>
+            <select onchange="updateStatus('${d.Tiket}', this.value)" class="form-select form-select-sm">
+              <option ${d.Status === "Baru" ? "selected" : ""}>Baru</option>
+              <option ${d.Status === "Proses" ? "selected" : ""}>Proses</option>
+              <option ${d.Status === "Selesai" ? "selected" : ""}>Selesai</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
     }
 
-    // === Update status ke Apps Script ===
-    async function updateStatus(index, newStatus) {
-      try {
-        const res = await fetch(`${sheetURL}?update=${index}&status=${newStatus}`);
-        const json = await res.json();
-
-        if (json.result === "ok") {
-          alert("✅ Status berhasil diperbarui!");
-          loadData(); // refresh data biar warna ikut berubah
-        } else {
-          alert("⚠️ Gagal memperbarui status!");
-        }
-      } catch (err) {
-        alert("❌ Koneksi ke server gagal!");
-      }
+    async function updateStatus(tiket, status) {
+      await fetch(`${SCRIPT_URL}?mode=update&tiket=${tiket}&status=${status}`);
+      loadPengaduan(false);
     }
 
-    // === Logout ===
-    function logout() {
-      localStorage.removeItem("auth");
-      window.location.href = "login.html";
+    function drawChart(data) {
+      const ctx = document.getElementById("chartRekap");
+      const weekly = { Baru: 0, Proses: 0, Selesai: 0 };
+      data.forEach(d => weekly[d.Status] = (weekly[d.Status] || 0) + 1);
+
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["Baru", "Proses", "Selesai"],
+          datasets: [{
+            label: "Jumlah Aduan",
+            data: [weekly.Baru || 0, weekly.Proses || 0, weekly.Selesai || 0],
+            backgroundColor: ["#fff3cd", "#cfe2ff", "#d1e7dd"]
+          }]
+        },
+        options: { plugins: { legend: { display: false } } }
+      });
     }
 
-    loadData();
+    function showNotification(msg) {
+      const container = document.querySelector(".toast-container");
+      const toast = document.createElement("div");
+      toast.className = "toast align-items-center text-bg-primary border-0 show";
+      toast.role = "alert";
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${msg}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    document.getElementById("statusFilter").addEventListener("change", () => renderTable(allData));
+    setInterval(() => loadPengaduan(), 30000);
+
+    loadPengaduan();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

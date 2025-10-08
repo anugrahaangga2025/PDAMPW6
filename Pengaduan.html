@@ -1,71 +1,228 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Form Pengaduan PDAM</title>
-<style>
-body { background:#f4f6fa; font-family:"Poppins",sans-serif; padding:20px; }
-.container { max-width:420px; background:white; margin:auto; border-radius:10px;
-  padding:20px; box-shadow:0 4px 8px rgba(0,0,0,0.2); }
-label {display:block;margin-top:10px;font-weight:600;}
-input,select,textarea { width:100%; padding:8px; margin-top:5px;
-  border-radius:6px; border:1px solid #ccc; }
-button { margin-top:15px; background:#007bff; color:#fff; border:none;
-  padding:10px 16px; border-radius:8px; cursor:pointer; }
-.success {color:green;font-weight:500;margin-top:10px;}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Form Pengaduan Pelanggan</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f6f8fb;
+      font-family: "Poppins", sans-serif;
+    }
+    .navbar {
+      background-color: #0d2a57;
+    }
+    .card {
+      border: none;
+      border-radius: 12px;
+    }
+    .card-header {
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+    }
+    input, select, textarea {
+      font-size: 14px !important;
+    }
+    .btn-primary {
+      background-color: #0d6efd;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #0b5ed7;
+    }
+    .badge {
+      font-size: 12px;
+    }
+  </style>
 </head>
+
 <body>
-<div class="container">
-  <h2>Form Pengaduan PDAM</h2>
-  <form id="aduanForm">
-    <label>ID Pelanggan</label>
-    <input type="text" id="id" required>
+  <!-- 🔹 Navbar -->
+  <nav class="navbar navbar-dark px-3">
+    <a href="index.html" class="navbar-brand d-flex align-items-center">
+      <img src="https://perumdatirtawening.co.id/asset/image/logo-horizon-kecils.gif" width="160">
+    </a>
+  </nav>
 
-    <label>Nama</label>
-    <input type="text" id="nama" required>
+  <div class="container-fluid mt-3">
+    <div class="row g-3">
+      <!-- 🔸 Kolom Form -->
+      <div class="col-md-3">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white py-2">
+            <h6 class="mb-0">📝 Form Pengaduan</h6>
+          </div>
+          <div class="card-body">
+            <form id="formAduan">
+              <div class="mb-2">
+                <label class="form-label">Nomor Pelanggan</label>
+                <input type="text" name="nopelanggan" class="form-control form-control-sm" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Nama Pelanggan</label>
+                <input type="text" name="nama" class="form-control form-control-sm" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Alamat</label>
+                <textarea name="alamat" class="form-control form-control-sm" rows="2" required></textarea>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Nomor Kontak</label>
+                <input type="text" name="kontak" class="form-control form-control-sm" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Jenis Keluhan</label>
+                <select name="jenis" class="form-select form-select-sm" required>
+                  <option value="">-- Pilih Jenis Keluhan --</option>
+                  <option>Air Mati</option>
+                  <option>Air Kecil</option>
+                  <option>Air Keruh</option>
+                  <option>Kebocoran</option>
+                  <option>Lainnya</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Keterangan</label>
+                <textarea name="keterangan" class="form-control form-control-sm" rows="2"></textarea>
+              </div>
+             <div class="mb-2">
+             <label class="form-label">Lokasi Gangguan (Lat,Lng)</label>
+            <div class="input-group input-group-sm">
+             <input type="text" name="lokasi" id="lokasi" class="form-control" placeholder="-6.9,107.6" readonly>
+             <button type="button" class="btn btn-outline-primary" id="btnLokasi">Set Lokasi</button>
+            </div>
+            
+            </div>
 
-    <label>Jenis Pengaduan</label>
-    <select id="jenis">
-      <option value="Air Mati">Air Mati</option>
-      <option value="Kebocoran">Kebocoran</option>
-      <option value="Meter Rusak">Meter Rusak</option>
-      <option value="Tagihan Tidak Wajar">Tagihan Tidak Wajar</option>
-    </select>
+              <div class="mb-2">
+                <label class="form-label">Upload Dokumentasi</label>
+                <input type="file" id="dokumentasi" class="form-control form-control-sm" accept="image/*">
+              </div>
+              <div class="d-grid">
+                <button class="btn btn-primary btn-sm" type="submit">Kirim Pengaduan</button>
+              </div>
+            </form>
+            <div id="notif" class="mt-2 text-center small"></div>
+          </div>
+        </div>
+      </div>
 
-    <label>Deskripsi</label>
-    <textarea id="deskripsi" rows="4" required></textarea>
+      <!-- 🔹 Kolom Tabel -->
+      <div class="col-md-9">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white py-2">
+            <h6 class="mb-0">📋 Data Pengaduan Masuk</h6>
+          </div>
+          <div class="card-body" style="max-height:520px;overflow:auto;">
+            <table class="table table-sm table-hover align-middle" id="tabelAduan">
+              <thead class="table-primary">
+                <tr>
+                  <th>Tiket</th>
+                  <th>Nama</th>
+                  <th>Jenis</th>
+                  <th>Kontak</th>
+                  <th>Status</th>
+                  <th>Tanggal</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <button type="submit">Kirim Pengaduan</button>
-    <div class="success" id="statusMsg"></div>
-  </form>
-</div>
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbydEXwuG8sG4x4nsWb4VV3M8rMXWdXAyhiq287d47fr_WSis0-Boht7_pxQF1dlGeqf0Q/exec";
 
-<script>
-const scriptURL = "https://script.google.com/macros/s/AKfycbxEjAMfJp6u2_u3SDf6xiJTsBfuHVqQ2zSDzp_dwnKwcsLvI58GuFczWTI17je-y4Q/exec";
+    // === Kirim pengaduan ===
+    document.getElementById("formAduan").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const data = Object.fromEntries(new FormData(form).entries());
 
-document.getElementById("aduanForm").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  const data = {
-    id: document.getElementById("id").value,
-    nama: document.getElementById("nama").value,
-    tanggal: new Date().toISOString().split("T")[0],
-    jenis: document.getElementById("jenis").value,
-    deskripsi: document.getElementById("deskripsi").value
-  };
+      // Upload foto sebagai base64
+      const file = document.getElementById("dokumentasi").files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          data.dokumentasi = reader.result;
+          await kirimData(data);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        await kirimData(data);
+      }
+    });
 
-  const res = await fetch(scriptURL + "?mode=addPengaduan", {
-    method: "POST",
-    body: JSON.stringify(data)
-  });
+    async function kirimData(data) {
+      const notif = document.getElementById("notif");
+      notif.innerHTML = "⏳ Mengirim data...";
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: new URLSearchParams(data),
+        });
+        const result = await res.json();
+        if (result.status === "success") {
+          notif.innerHTML = "✅ Aduan berhasil dikirim!";
+          loadAduan();
+        } else {
+          notif.innerHTML = "❌ Gagal mengirim aduan.";
+        }
+      } catch (err) {
+        notif.innerHTML = "⚠️ Terjadi kesalahan koneksi.";
+      }
+    }
 
-  const json = await res.json();
-  if(json.status === "success"){
-    document.getElementById("statusMsg").innerText = "✅ Pengaduan berhasil dikirim!";
-    e.target.reset();
+    // === Load data pengaduan ===
+    async function loadAduan() {
+      try {
+        const res = await fetch(`${SCRIPT_URL}?mode=aduan`);
+        const data = await res.json();
+        const tbody = document.querySelector("#tabelAduan tbody");
+        tbody.innerHTML = data.reverse().map(d => `
+          <tr>
+            <td>${d.Tiket}</td>
+            <td>${d["Nama Pelanggan"]}</td>
+            <td>${d["Jenis Keluhan"]}</td>
+            <td>${d["Nomor Kontak"]}</td>
+            <td><span class="badge bg-${d.Status === "Baru" ? "danger" : d.Status === "Proses" ? "warning text-dark" : "success"}">${d.Status}</span></td>
+            <td>${new Date(d.Tanggal).toLocaleString("id-ID")}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Gagal memuat data:", err);
+      }
+    }
+
+    loadAduan();
+    setInterval(loadAduan, 10000);
+    // === Tombol Set Lokasi ===
+document.getElementById("btnLokasi").addEventListener("click", () => {
+  const lokasiInput = document.getElementById("lokasi");
+  if (!navigator.geolocation) {
+    alert("❌ Browser kamu tidak mendukung GPS.");
+    return;
   }
+
+  lokasiInput.value = "Mendeteksi lokasi...";
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      lokasiInput.value = `${lat},${lng}`;
+    },
+    (err) => {
+      lokasiInput.value = "";
+      alert("⚠️ Gagal mendapatkan lokasi: " + err.message);
+    },
+    { enableHighAccuracy: true }
+  );
 });
-</script>
+
+  </script>
 </body>
 </html>
