@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PDAM Tirtawening</title>
+<!-- LIBRARIES -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js"></script>
+<style>
+  html,body{height:100%;margin:0;font-family:"Poppins",sans-serif;transition:background 0.3s ease;}
+  body.light{background:#eef2f7;color:#111;}
+  body.dark{background:#0b1f3b;color:#fff;}
+  #map{height:100%;width:100%;}
+
+  /* switch kiri */
+  .switch-container{position:absolute;top:80px;left:10px;z-index:1000;display:flex;flex-direction:column;gap:6px;
+    background:rgba(255,255,255,0.9);border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.3);padding:6px;}
+  body.dark .switch-container{background:rgba(0,0,0,0.7);}
+  .switch-btn{background:transparent;border:none;font-size:1rem;cursor:pointer;border-radius:8px;padding:4px 8px;color:#222;}
+  .switch-btn.active{background:#007bff;color:#fff;}
+  body.dark .switch-btn{color:#fff;}
+
+  /* Popup card */
+  .popup-card{width:320px;background:#fff;border-radius:12px;overflow:hidden;
+    box-shadow:0 4px 10px rgba(0,0,0,0.3);color:#000;font-size:0.85rem;}
+  body.dark .popup-card{background:#10233f;color:#f2f2f2;}
+  .popup-header{padding:10px 12px 4px;border-bottom:1px solid #ddd;}
+  .popup-header h3{margin:0;font-size:1.05rem;font-weight:600;}
+  .popup-header small{color:#777;}
+  .menuju-lokasi{display:inline-block;font-size:0.75rem;background:#c5f6c5;color:#2e7d32;border-radius:20px;
+    padding:3px 10px;margin-top:4px;text-decoration:none;}
+  .popup-body{padding:10px 12px;}
+  .popup-status{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .status-label{padding:2px 8px;border-radius:10px;font-size:0.75rem;color:#fff;}
+  .sudah{background:#00f43d;}
+  .Menunggak{background:hsl(4, 100%, 49%);}
+  .popup-tab{display:flex;border-bottom:1px solid #ccc;font-size:0.8rem;margin-bottom:6px;}
+  .popup-tab div{flex:1;text-align:center;padding:6px 0;cursor:pointer;}
+  .popup-tab div.active{color:#4caf50;font-weight:600;border-bottom:2px solid #4caf50;}
+  .popup-section{display:none;}
+  .popup-section.active{display:block;}
+  .popup-section table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+  .popup-section td{padding:4px 6px;vertical-align:top;}
+  .popup-section td:first-child{color:#4caf50;font-weight:500;width:40%;}
+  @media(max-width:600px){.popup-card{width:90vw;}}
+
+  /* search kanan atas */
+  .search-box {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 9999;
+    background: rgba(255,255,255,0.95);
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .search-box input {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 8px;
+    width: 180px;
+  }
+  .search-box button {
+    background: #0d2a57;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .search-box button:hover {
+    background: #0056b3;
+  }
+/* Navbar */
+.navbar {
+  background: rgba(11,31,59,0.8);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.navbar-brand {
+  color: #4db8ff !important;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.navbar .btn-panel {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 8px;
+  color: #4db8ff;
+  padding: 6px 12px;
+}
+.navbar .btn-panel:hover {
+  background: #4db8ff;
+  color: #0b1f3b;
+}
+/* Map */
+#map {
+  height: 100vh;
+  width: 100%;
+  z-index: 1;
+}
+/* Sidebar glass */
+#sidebar {
+  position: fixed;
+  top: 70px;
+  right: -360px;
+  width: 360px;
+  height: calc(100vh - 70px);
+  background: rgba(16,40,78,0.7);
+  backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255,255,255,0.1);
+  border-top-left-radius: 20px;
+  box-shadow: -2px 0 12px rgba(0,0,0,0.3);
+  color: #fff;
+  padding: 15px;
+  transition: right 0.5s ease;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+}
+#sidebar.active { right: 0; }
+/* Sidebar tabs */
+.tab-header {
+  display: flex;
+  justify-content: space-around;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 10px;
+}
+.tab-btn {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  font-size: 14px;
+  color: #ccc;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+.tab-btn.active {
+  background: #4db8ff;
+  color: #0b1f3b;
+  font-weight: 600;
+}
+/* Tab content */
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 10px;
+}
+.tab-pane { display: none; }
+.tab-pane.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Marker cluster style */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: rgba(77,184,255,0.2);
+  border: 1px solid #4db8ff;
+  border-radius: 50%;
+  color: #fff;
+}
+/* Popup card */
+.popup-card {
+  background: rgba(16,40,78,0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  width: 300px;
+  overflow: hidden;
+}
+  
+</style>
+</head>
+<body>
+  <nav class="navbar navbar-dark px-4">
+  <a class="navbar-brand" href="#">
+    <img src="https://perumdatirtawening.co.id/asset/image/logo-horizon-kecils.gif" height="40" alt="" />
+    Peta Pelayanan Wilayah 6
+  </a>
+  <button class="btn-panel" id="togglePanel"><i class="fas fa-gear"></i> Panel</button>
+</nav>
+<div id="map"></div>
+<div id="sidebar">
+  <div class="tab-header">
+    <div class="tab-btn active" data-tab="base"><i class="fas fa-layer-group"></i></div>
+    <div class="tab-btn" data-tab="search"><i class="fas fa-search"></i></div>
+    <div class="tab-btn" data-tab="pressure"><i class="fas fa-tachometer-alt"></i></div>
+    <div class="tab-btn" data-tab="report"><i class="fas fa-bullhorn"></i></div>
+    <div class="tab-btn" data-tab="layers"><i class="fas fa-sliders-h"></i></div>
+  </div>
+  <div class="tab-content">
+    <div class="tab-pane active" id="base">
+      <h6>🗺️ Pilih Basemap</h6>
+      <button class="btn btn-sm btn-primary w-100 mb-2" id="lightBtn">Peta Terang</button>
+      <button class="btn btn-sm btn-secondary w-100 mb-2" id="darkBtn">Peta Gelap</button>
+      <button class="btn btn-sm btn-success w-100" id="satBtn">Peta Satelit</button>
+    </div>
+    <div class="tab-pane" id="search">
+      <h6>🔍 Cari Pelanggan</h6>
+      <input type="text" class="form-control mb-2" id="searchNama" placeholder="Masukkan nama atau nomor" />
+      <button class="btn btn-info w-100" id="btnCari">Cari</button>
+    </div>
+    <div class="tab-pane" id="pressure">
+      <h6>💧 Tekanan Air Realtime</h6>
+      <table class="table table-sm text-white" id="tblTekanan">
+        <thead><tr><th>Sensor</th><th>Tekanan</th><th>Waktu</th></tr></thead>
+        <tbody><tr><td colspan="3">Memuat data...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="report">
+      <h6>📣 Daftar Pengaduan</h6>
+      <div id="aduanList" style="font-size:13px;line-height:1.4;">Memuat data...</div>
+    </div>
+    <div class="tab-pane" id="layers">
+      <h6>🗂️ Kontrol Layer</h6>
+      <div class="form-check mb-1">
+        <input class="form-check-input" type="checkbox" id="chkPelanggan" checked>
+        <label class="form-check-label" for="chkPelanggan">Pelanggan</label>
+      </div>
+      <div class="form-check mb-1">
+        <input class="form-check-input" type="checkbox" id="chkAduan" checked>
+        <label class="form-check-label" for="chkAduan">Pengaduan</label>
+      </div>
+      <div class="form-check mb-1">
+        <input class="form-check-input" type="checkbox" id="chkWilayah" checked>
+        <label class="form-check-label" for="chkWilayah">Wilayah (DMA)</label>
+      </div>
+      <div class="form-check mb-1">
+        <input class="form-check-input" type="checkbox" id="chkSensor" checked>
+        <label class="form-check-label" for="chkSensor">Sensor Tekanan</label>
+      </div>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="chkPipa" checked>
+        <label class="form-check-label" for="chkPipa">Pipa</label>
+      </div>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="chkLegend" checked>
+        <label class="form-check-label" for="chkLegend">Legenda DMA</label>
+      </div>
+      <hr class="border-secondary">
+      <h6>🗺️ Basemap Cepat</h6>
+      <div class="d-grid gap-1">
+        <button class="btn btn-sm btn-primary" id="lightBtn2">Peta Terang</button>
+        <button class="btn btn-sm btn-secondary" id="darkBtn2">Peta Gelap</button>
+        <button class="btn btn-sm btn-success" id="satBtn2">Peta Satelit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<audio id="notifSound" preload="auto">
+  <source src="https://assets.mixkit.co/sfx/download/mixkit-correct-answer-tone-2870.wav" type="audio/wav">
+</audio>
+
+<script>
+  // 🔢 Format angka ke Rupiah
+function formatRupiah(angka) {
+  if (!angka || isNaN(angka)) return "Rp 0";
+  return "Rp " + Number(angka).toLocaleString("id-ID");
+}
+const scriptURL="https://script.google.com/macros/s/AKfycbz5BaQOUHGv_B9wHAraZB3vtbxBwnKgATsXvfb0WpwQ9NYausrgsfusi4LHlvxLFzfs3Q/exec?mode=pelanggan";
+const map=L.map('map').setView([-6.9457,107.6093],13);
+const baseLayers={
+  light:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+  dark:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
+  sat:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
+};
+baseLayers.light.addTo(map);
+
+let pelangganLayer;
+const markers = []; // 🟢 array global untuk semua marker pelanggan
+
+async function loadData(){
+  const res=await fetch(scriptURL);
+  const data=await res.json();
+  if(pelangganLayer) map.removeLayer(pelangganLayer);
+
+  pelangganLayer=L.geoJSON(data,{
+    pointToLayer:(f,latlng)=>L.circleMarker(latlng,{radius:7,fillColor:"#4db8ff",color:"#fff",weight:1,fillOpacity:0.9}),
+    onEachFeature:(f,layer)=>{
+      const p=f.properties;
+      const statusClass=(p["Status Planggan"]||"").toLowerCase().includes("nunggak")?"tunggakan":"sudah";
+      
+
+      const popupHTML=`
+        <div class="popup-card">
+          <div class="popup-header">
+            <h3>${p.Nama||"Pelanggan"} <small>${p.ID||""}</small></h3>
+            <a class="menuju-lokasi" target="_blank" href="https://www.google.com/maps?q=${p.Latitude},${p.Longtitude}">📍 Menuju Lokasi</a>
+          </div>
+          <div class="popup-body">
+            <div class="popup-status">
+              <div>Pemakaian: <b>${formatMeterKubik(p.Pemakaian)}</b></div>
+              <div class="status-label ${statusClass}">${p["Status Planggan"]||"Belum Terbayar"}</div>
+              
+            </div>
+            <div class="popup-tab">
+              <div class="tab-btn active" data-tab="detail">Pelanggan</div>
+              <div class="tab-btn" data-tab="tagihan">Tagihan</div>
+              <div class="tab-btn" data-tab="foto">Foto</div>
+            </div>
+            <div class="popup-section active" id="detail">
+              <table>
+                <tr><td>Alamat</td><td>${p.Alamat||"-"}</td></tr>
+                <tr><td>Kelurahan</td><td>${p.Kelurahan||"-"}</td></tr>
+                <tr><td>Kecamatan</td><td>${p.Kecamatan||"-"}</td></tr>
+              </table>
+            </div>
+            <div class="popup-section" id="tagihan">
+              <table>
+                <tr><td>Tagihan</td><td>${formatRupiah(p.Tagihan)}</td></tr>
+                <tr><td>Status</td><td>${p.StatusBilling||"-"}</td></tr>
+                <tr><td>Tunggakan</td><td>${formatRupiah(p.Tunggakan)}</td></tr>
+                <tr><td>Keterangan Cater</td><td>${p.Ketcatat||"-"}</td></tr>
+
+              </table>
+            </div>
+            <div class="popup-section" id="foto">
+              ${p["Foto Rumah"]?`<img src="${p["Foto Rumah"]}" style="width:100%;border-radius:8px;">`:"<p>Tidak ada foto.</p>"}
+            </div>
+          </div>
+        </div>`;
+      layer.bindPopup(popupHTML);
+
+      // 🟢 simpan nama ke marker
+      if (p.Nama) {
+        layer.nama = p.Nama.toLowerCase();
+        markers.push(layer);
+      }
+
+      // aktifkan tab popup
+      layer.on("popupopen",()=>{
+        const popup=layer.getPopup().getElement();
+        const tabs=popup.querySelectorAll(".tab-btn");
+        const sections=popup.querySelectorAll(".popup-section");
+        tabs.forEach(btn=>{
+          btn.addEventListener("click",()=>{
+            tabs.forEach(b=>b.classList.remove("active"));
+            btn.classList.add("active");
+            sections.forEach(s=>s.classList.remove("active"));
+            popup.querySelector(`#${btn.dataset.tab}`).classList.add("active");
+          });
+        });
+      });
+    }
+  }).addTo(map);
+  map.fitBounds(pelangganLayer.getBounds());
+// 🔢 Format angka ke satuan m³ (meter kubik)
+function formatMeterKubik(angka) {
+  if (!angka || isNaN(angka)) return "0 m³";
+  return Number(angka).toLocaleString("id-ID") + " m³";
+}
+}
+loadData();
+
+// 🟢 SEARCH NAMA PELANGGAN
+function cariNama() {
+  const input = document.getElementById("searchNama").value.toLowerCase();
+  if (!input) return;
+  const found = markers.find(m => m.nama && m.nama.includes(input));
+  if (found) {
+    map.flyTo(found.getLatLng(), 17, { duration: 1.2 });
+    found.openPopup();
+  } else {
+    alert("Nama pelanggan tidak ditemukan!");
+  }
+}
+document.getElementById("btnCari").addEventListener("click", cariNama);
+document.getElementById("searchNama").addEventListener("keypress", e => {
+  if (e.key === "Enter") cariNama();
+});
+
+// switch layer
+const lightBtn=document.getElementById('lightBtn');
+const darkBtn=document.getElementById('darkBtn');
+const satBtn=document.getElementById('satBtn');
+const allBtns=[lightBtn,darkBtn,satBtn];
+function setBase(mode,btn){
+  for(let key in baseLayers){if(map.hasLayer(baseLayers[key])) map.removeLayer(baseLayers[key]);}
+  if(mode==="light"){baseLayers.light.addTo(map);document.body.className="light";}
+  else if(mode==="dark"){baseLayers.dark.addTo(map);document.body.className="dark";}
+  else{baseLayers.sat.addTo(map);document.body.className="light";}
+}
+lightBtn.onclick=()=>setBase("light",lightBtn);
+darkBtn.onclick=()=>setBase("dark",darkBtn);
+satBtn.onclick=()=>setBase("sat",satBtn);
+// 🕒 AUTO REFRESH SETIAP 1 MENIT TANPA TAMPILAN
+setInterval(() => {
+  console.log("⟳ Auto-refresh data pelanggan...");
+  loadData(); // panggil ulang data
+}, 60000); // 60000 ms = 1 menit
+
+</script>
+<!-- 🔔 Tambah elemen suara & toast -->
+<audio id="notifSound" preload="auto">
+  <source src="https://assets.mixkit.co/sfx/download/mixkit-correct-answer-tone-2870.wav" type="audio/wav">
+</audio>
+
+<style>
+/* Toast Notification Style */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #0078FF;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.4s ease;
+  z-index: 9999;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Blinking marker */
+.blink-marker {
+  animation: blink 1.5s infinite ease-in-out;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+</style>
+
+<script>
+// 🔹 Global untuk simpan tiket baru
+let shownTickets = new Set();
+
+// 🔹 Fungsi buat tampilkan toast
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 100);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 500);
+  }, 4000);
+}
+
+// 🔹 Fungsi main popup aduan
+function popupAduan(p) {
+  const status = p.Status || "Baru";
+  const statusClass =
+    status === "Baru" ? "status-baru" :
+    status === "Proses" ? "status-proses" :
+    "status-selesai";
+  const id = p.Tiket || Math.random().toString(36).substring(2,7);
+
+  return `
+    <div class="${status === "Baru" ? "blink-marker" : ""}">
+      <div class="popup-card">
+        <div class="popup-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="margin:0;font-size:15px;color:#0078FF;">
+            ${p["Nama Pelanggan"] || "Pelanggan"}
+            <small style="color:#999;font-size:12px;">${p.Tiket || ""}</small>
+          </h3>
+          <a href="https://www.google.com/maps?q=${p["Lokasi Gangguan"]}"
+             target="_blank"
+             style="font-size:12px;color:#0078FF;text-decoration:none;">📍 Lokasi</a>
+        </div>
+
+        <div class="popup-tabs" style="display:flex;margin-top:8px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+          <div class="popup-tab-btn active" data-tab="detail-${id}" style="flex:1;text-align:center;font-size:12px;padding:4px;cursor:pointer;">🧾 Detail</div>
+          <div class="popup-tab-btn" data-tab="keterangan-${id}" style="flex:1;text-align:center;font-size:12px;padding:4px;cursor:pointer;">💬 Keterangan</div>
+        </div>
+
+        <div id="detail-${id}" class="popup-content">
+          <p style="margin:2px 0 8px 0;color:#777;font-size:12px;font-style:italic;">
+          ${p.Tanggal ? new Date(p.Tanggal).toLocaleString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: "Asia/Jakarta"
+        }) + " WIB"
+      : "-"
+  } <span style="padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;
+              background:${
+                status==="Baru"?"#ffebee":status==="Proses"?"#fff6da":"#e8f5e9"
+              };
+              color:${
+                status==="Baru"?"#e53935":status==="Proses"?"#f9a825":"#2e7d32"
+              };">${status}</span>
+</p>
+          <div><b>Jenis Keluhan:</b> ${p["Jenis Keluhan"] || "-"}</div>
+           <div><b>NoLan:</b> ${p["NomorPelanggan"] || "-"}</div>
+          <div><b>Telpon:</b> ${p["Nomor Kontak"] || "-"}</div>
+          <div><b>Alamat:</b> ${p["Alamat"] || "-"}</div>
+        </div>
+
+        <div id="keterangan-${id}" class="popup-content hide" style="display:none;">
+          <b>Keluhan:</b><br>
+          <div style="white-space:pre-wrap;margin-bottom:6px;">${p["Keterangan"] || "-"}</div>
+          ${
+            p["Dokumentasi Pengaduan"]
+              ? `<img src="${p["Dokumentasi Pengaduan"]}" style="width:100%;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">`
+              : `<p style="font-size:12px;color:#888;text-align:center;">Tidak ada foto</p>`
+          }
+        </div>
+      </div>
+    </div>
+    <script>
+      document.querySelectorAll('.popup-tab-btn').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const tabId=btn.getAttribute('data-tab');
+          const parent=btn.closest('.popup-card');
+          parent.querySelectorAll('.popup-tab-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          parent.querySelectorAll('.popup-content').forEach(c=>c.style.display='none');
+          parent.querySelector('#'+tabId).style.display='block';
+        });
+      });
+    <\/script>
+  `;
+}
+
+// 🔹 Fungsi load data pengaduan
+async function loadAduan() {
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbz5ZFftu5HERETjyT25WSdIbz8Va0zqoCv4We3OpDIqi09vpWEO7814ZE2Llu2dNj5kJA/exec?mode=aduan");
+    const data = await res.json();
+    data.sort((a,b)=>new Date(a.Tanggal)-new Date(b.Tanggal));
+
+    if(window.aduanLayer) map.removeLayer(window.aduanLayer);
+    window.aduanLayer = L.layerGroup().addTo(map);
+
+    const audio = document.getElementById("notifSound");
+
+    data.forEach(p=>{
+      const lokasi = p["Lokasi Gangguan"];
+      const status = p.Status || "";
+      if(!lokasi || status==="Selesai") return;
+
+      const [lat,lng] = lokasi.split(",").map(Number);
+      if(isNaN(lat)||isNaN(lng)) return;
+
+      // 🔔 Deteksi tiket baru
+      if(!shownTickets.has(p.Tiket)){
+        shownTickets.add(p.Tiket);
+        if(status==="Baru"){
+          audio.currentTime = 0;
+          audio.play().catch(()=>{});
+          showToast(`🔔 Aduan baru: ${p["Nama Pelanggan"] || "Pelanggan"} (${p.Tiket})`);
+        }
+      }
+
+      const warna = status==="Baru"?"#ff3333":status==="Proses"?"#FFD93D":"#2ECC71";
+      const iconHTML = `
+        <div class="${status==="Baru"?"blink-marker":""}"
+             style="width:18px;height:18px;background:${warna};
+             border:2px solid #fff;border-radius:50%;
+             box-shadow:0 0 6px rgba(0,0,0,0.4);">
+        </div>`;
+
+      const marker = L.marker([lat,lng],{
+        icon:L.divIcon({className:"",html:iconHTML,iconSize:[18,18],iconAnchor:[9,9]})
+      }).addTo(window.aduanLayer);
+
+      marker.bindPopup(popupAduan(p));
+      if(status==="Baru") marker.openPopup();
+    });
+
+  } catch(err){
+    console.error("❌ Gagal memuat data:",err);
+  }
+}
+
+loadAduan();
+
+// === Aktifin tab Detail / Keterangan di setiap popup ===
+map.on("popupopen", (e) => {
+  const popupNode = e.popup.getElement();
+  if (!popupNode) return;
+
+  const btns = popupNode.querySelectorAll(".popup-tab-btn");
+  btns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tabId = btn.getAttribute("data-tab");
+      const parent = btn.closest(".popup-card");
+      if (!parent) return;
+
+      // nonaktifin semua tombol
+      parent.querySelectorAll(".popup-tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      // sembunyikan semua isi tab
+      parent.querySelectorAll(".popup-content").forEach((c) => (c.style.display = "none"));
+      const showTab = parent.querySelector(`#${tabId}`);
+      if (showTab) showTab.style.display = "block";
+    });
+  });
+});
+
+
+setInterval(loadAduan, 30000);
+/* ==========================================================
+   🌡️ LAYER TEKANAN AIR (ambil dari ThingSpeak)
+========================================================== */
+async function loadTekanan() {
+  try {
+    const res = await fetch("https://api.thingspeak.com/channels/3102639/feeds.json?results=10");
+    const data = await res.json();
+    const feeds = data.feeds || [];
+    if (window.tekananLayer) map.removeLayer(window.tekananLayer);
+
+    window.tekananLayer = L.layerGroup().addTo(map);
+
+    feeds.forEach((f, i) => {
+      const value = parseFloat(f.field1);
+      if (isNaN(value)) return;
+
+      // Contoh titik koordinat (ganti sesuai lokasi sensor aslimu)
+      const titikSensor = [
+        [-6.9457, 107.6093],
+        [-6.9490, 107.6125],
+        [-6.9522, 107.6060]
+      ];
+
+      const lokasi = titikSensor[i % titikSensor.length];
+      const warna =
+        value < 0.3 ? "#ff4d4d" :
+        value < 0.5 ? "#ffcc00" :
+        "#00cc66";
+
+      const markerHTML = `
+        <div style="
+          width:20px;height:20px;border-radius:50%;
+          background:${warna};border:2px solid #fff;
+          box-shadow:0 0 6px rgba(0,0,0,0.4);">
+        </div>`;
+
+      const marker = L.marker(lokasi, {
+        icon: L.divIcon({ html: markerHTML, iconSize: [20, 20], className: "" })
+      }).addTo(window.tekananLayer);
+
+      const waktu = new Date(f.created_at).toLocaleString("id-ID", {
+        day: "2-digit", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
+      });
+
+      marker.bindPopup(`
+        <div class="popup-card">
+          <div class="popup-header"><h3>Sensor Tekanan ${i + 1}</h3></div>
+          <div class="popup-body">
+            <p>💧 <b>Tekanan:</b> ${value.toFixed(2)} bar</p>
+            <p>🕒 ${waktu}</p>
+            <a href="https://www.google.com/maps?q=${lokasi[0]},${lokasi[1]}" 
+               target="_blank" class="menuju-lokasi">📍 Lihat di Maps</a>
+          </div>
+        </div>
+      `);
+    });
+  } catch (err) {
+    console.error("Gagal load tekanan:", err);
+  }
+}
+
+// 🔁 Auto refresh tekanan tiap 1 menit
+loadTekanan();
+setInterval(loadTekanan, 60000);
+
+</script>
+<script>
+async function updateTekananBox() {
+  try {
+    const res = await fetch("https://api.thingspeak.com/channels/3102639/feeds.json?results=5");
+    const data = await res.json();
+    const feeds = data.feeds || [];
+    const tbody = document.querySelector("#tblTekanan tbody");
+    tbody.innerHTML = "";
+
+    feeds.forEach((f, i) => {
+      const value = parseFloat(f.field1);
+      if (isNaN(value)) return;
+
+      const waktu = new Date(f.created_at).toLocaleTimeString("id-ID", {
+        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
+      });
+
+      let cls = "ok";
+      if (value < 0.3) cls = "low";
+      else if (value < 0.5) cls = "mid";
+
+      const row = `
+        <tr>
+          <td>Sensor ${i + 1}</td>
+          <td class="${cls}">${value.toFixed(2)}</td>
+          <td>${waktu}</td>
+        </tr>
+      `;
+      tbody.insertAdjacentHTML("beforeend", row);
+    });
+
+  } catch (err) {
+    console.error("Gagal ambil tekanan:", err);
+    document.querySelector("#tblTekanan tbody").innerHTML =
+      `<tr><td colspan="3">❌ Gagal memuat</td></tr>`;
+  }
+}
+
+updateTekananBox();
+setInterval(updateTekananBox, 60000); // refresh tiap 1 menit
+
+</script>
+<!-- 🔔 Notifikasi Tekanan Rendah -->
+<div id="alertTekanan"></div>
+
+<style>
+#alertTekanan {
+  position: absolute;
+  top: 70px; /* pas di bawah search box */
+  right: 15px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.alert-box {
+  background: #ff5252;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  animation: slideIn 0.3s ease, fadeOut 1s ease 5s forwards;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(20px); }
+}
+</style>
+
+<script>
+// 🧠 Tambahin fungsi popup alert tekanan rendah
+function showLowPressureAlert(sensor, value) {
+  const alertBox = document.createElement("div");
+  alertBox.className = "alert-box";
+  alertBox.innerHTML = `
+    ⚠️ <b>Tekanan Rendah!</b><br>
+    Sensor ${sensor}: <b>${value.toFixed(2)} bar</b>
+  `;
+  document.getElementById("alertTekanan").appendChild(alertBox);
+  setTimeout(() => alertBox.remove(), 6000);
+}
+
+// 🔄 Modifikasi fungsi updateTekananBox dikit biar munculin alert
+async function updateTekananBox() {
+  try {
+    const res = await fetch("https://api.thingspeak.com/channels/3102639/feeds.json?results=5");
+    const data = await res.json();
+    const feeds = data.feeds || [];
+    const tbody = document.querySelector("#tblTekanan tbody");
+    tbody.innerHTML = "";
+
+    feeds.forEach((f, i) => {
+      const value = parseFloat(f.field1);
+      if (isNaN(value)) return;
+
+      const waktu = new Date(f.created_at).toLocaleTimeString("id-ID", {
+        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
+      });
+
+      let cls = "ok";
+      if (value < 0.3) {
+        cls = "low";
+        showLowPressureAlert(i + 1, value); // 🚨 panggil popup alert
+      } else if (value < 0.5) {
+        cls = "mid";
+      }
+
+      const row = `
+        <tr>
+          <td>Sensor ${i + 1}</td>
+          <td class="${cls}">${value.toFixed(2)}</td>
+          <td>${waktu}</td>
+        </tr>
+      `;
+      tbody.insertAdjacentHTML("beforeend", row);
+    });
+
+  } catch (err) {
+    console.error("Gagal ambil tekanan:", err);
+    document.querySelector("#tblTekanan tbody").innerHTML =
+      `<tr><td colspan="3">❌ Gagal memuat</td></tr>`;
+  }
+}
+
+updateTekananBox();
+setInterval(updateTekananBox, 60000); // refresh tiap 1 menit
+</script>
+<script>
+// 🧠 PAKAI TOKEN & CHAT ID YANG SAMA DARI PENGADUAN
+const BOT_TOKEN = "8353376486:AAET9-fMa_DoYZYA7TF18sGPEYgfMDDqQH4";   // 🔁 sama kayak yang udah lu pakai
+const CHAT_ID   = "-4804496689";          // 🔁 chat grup yang sama
+
+// simpan status alert biar ga spam
+let sentLowPressure = new Set();
+
+// fungsi kirim ke Telegram
+async function kirimTelegram(pesan) {
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: CHAT_ID, text: pesan, parse_mode: "HTML" })
+    });
+    console.log("✅ Telegram terkirim:", pesan);
+  } catch (err) {
+    console.error("❌ Gagal kirim Telegram:", err);
+  }
+}
+
+// === 🔴 CEK TEKANAN DARI THINGSPEAK & NOTIF TELEGRAM ===
+async function cekTekananRendah() {
+  try {
+    const res = await fetch("https://api.thingspeak.com/channels/3102639/feeds.json?results=5");
+    const data = await res.json();
+    const feeds = data.feeds || [];
+
+    // hapus marker tekanan lama
+    if (window.tekananAlertLayer) map.removeLayer(window.tekananAlertLayer);
+    window.tekananAlertLayer = L.layerGroup().addTo(map);
+
+    feeds.forEach((f, i) => {
+      const value = parseFloat(f.field1);
+      if (isNaN(value)) return;
+
+      const titikSensor = [
+        [-6.9457, 107.6093],
+        [-6.9490, 107.6125],
+        [-6.9522, 107.6060]
+      ];
+      const lokasi = titikSensor[i % titikSensor.length];
+      const waktu = new Date(f.created_at).toLocaleString("id-ID", {
+        day: "2-digit", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
+      });
+
+      // nilai ambang tekanan
+      if (value < 0.3) {
+        const iconHTML = `
+          <div class="blink-marker" style="width:22px;height:22px;
+            border-radius:50%;background:#ff3b3b;border:2px solid #fff;
+            box-shadow:0 0 10px rgba(255,0,0,0.6);"></div>`;
+
+        const marker = L.marker(lokasi, {
+          icon: L.divIcon({ html: iconHTML, iconSize: [22, 22], className: "" })
+        }).addTo(window.tekananAlertLayer);
+
+        // popup tekanan rendah
+        marker.bindPopup(`
+          <div class="popup-card" style="border:2px solid #ff4444">
+            <div class="popup-header" style="background:#ff3b3b;color:#fff;padding:6px 10px;border-radius:8px 8px 0 0">
+              ⚠️ <b>Tekanan Rendah</b>
+            </div>
+            <div class="popup-body" style="padding:8px;font-size:13px;">
+              <b>Sensor:</b> ${i + 1}<br>
+              <b>Tekanan:</b> <span style="color:#e53935;">${value.toFixed(2)} bar</span><br>
+              <b>Waktu:</b> ${waktu}<br>
+              <a href="https://www.google.com/maps?q=${lokasi[0]},${lokasi[1]}" target="_blank" style="color:#0078FF;text-decoration:none;">📍 Lihat di Maps</a>
+            </div>
+          </div>
+        `);
+
+        // kirim Telegram cuma sekali
+        if (!sentLowPressure.has(i)) {
+          sentLowPressure.add(i);
+          const msg = `🚨 <b>TEKANAN RENDAH TERDETEKSI</b>\nSensor ${i + 1}\n💧 Tekanan: <b>${value.toFixed(2)} bar</b>\n🕒 ${waktu}\n📍 https://www.google.com/maps?q=${lokasi[0]},${lokasi[1]}`;
+          kirimTelegram(msg);
+        }
+      } else {
+        // reset kalau udah normal, biar bisa kirim lagi nanti
+        if (sentLowPressure.has(i)) {
+          sentLowPressure.delete(i);
+          const msg = `✅ <b>Tekanan Normal Kembali</b>\nSensor ${i + 1} sekarang ${value.toFixed(2)} bar.`;
+          kirimTelegram(msg);
+        }
+      }
+    });
+  } catch (err) {
+    console.error("❌ Gagal cek tekanan:", err);
+  }
+}
+
+// Jalankan awal & refresh tiap 30 detik
+cekTekananRendah();
+setInterval(cekTekananRendah, 30000);
+</script>
+<!-- === PATCH: Panel, Tabs, Basemap, Layer Toggle, Back Dashboard === -->
+<script>
+// ===== UTIL =====
+const $  = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+
+// ====== SIDEBAR TOGGLE (btn "Panel" di navbar) ======
+const sidebar    = $("#sidebar");
+const toggleBtn  = $("#togglePanel");
+toggleBtn?.addEventListener("click", () => {
+  sidebar.classList.toggle("active");
+});
+
+// (opsional) tekan tombol "P" utk buka/tutup panel
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "p") sidebar.classList.toggle("active");
+});
+
+// ====== TAB SWITCHING DI SIDEBAR ======
+function wireSidebarTabs(){
+  const tabBtns = $$(".tab-header .tab-btn");
+  const panes   = $$(".tab-content .tab-pane");
+  tabBtns.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      // header state
+      tabBtns.forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      // content state
+      panes.forEach(p=>p.classList.remove("active"));
+      const target = btn.getAttribute("data-tab");
+      $("#"+target)?.classList.add("active");
+    });
+  });
+}
+wireSidebarTabs();
+
+// ====== BASEMAP SWITCH (utama & quick) ======
+const lightBtn  = $("#lightBtn");
+const darkBtn   = $("#darkBtn");
+const satBtn    = $("#satBtn");
+const lightBtn2 = $("#lightBtn2");
+const darkBtn2  = $("#darkBtn2");
+const satBtn2   = $("#satBtn2");
+
+function setBase(mode){
+  // pastikan baseLayers & map ada (dari file asli)
+  if (!window.baseLayers || !window.map) return;
+  Object.values(baseLayers).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
+  if (mode==="light"){ baseLayers.light.addTo(map); document.body.className="light";}
+  else if (mode==="dark"){ baseLayers.dark.addTo(map); document.body.className="dark";}
+  else { baseLayers.sat.addTo(map); document.body.className="light";}
+}
+lightBtn?.addEventListener("click", ()=>setBase("light"));
+darkBtn?.addEventListener("click", ()=>setBase("dark"));
+satBtn?.addEventListener("click",  ()=>setBase("sat"));
+lightBtn2?.addEventListener("click",()=>setBase("light"));
+darkBtn2?.addEventListener("click", ()=>setBase("dark"));
+satBtn2?.addEventListener("click",  ()=>setBase("sat"));
+
+// ====== “BACK DASHBOARD” BUTTON ======
+// taro tombol di tab BASE paling atas
+(function injectBackBtn(){
+  const basePane = $("#base");
+  if(!basePane || $("#backDash")) return;
+  const btn = document.createElement("button");
+  btn.id = "backDash";
+  btn.className = "btn btn-outline-light w-100 mb-2";
+  btn.innerHTML = "⬅️ Kembali ke Dashboard";
+  btn.addEventListener("click", ()=>{
+    // ganti sesuai kebutuhan lu (history.back atau ke URL tertentu)
+    if (document.referrer) history.back();
+    else window.location.href = "/"; 
+  });
+  basePane.prepend(btn);
+})();
+
+// ====== LEGEND DMA (simple) ======
+const legendCtl = L.control({position:"bottomright"});
+legendCtl.onAdd = function(){
+  const div = L.DomUtil.create("div","leaflet-bar");
+  div.style.background = "rgba(16,40,78,0.85)";
+  div.style.color = "#fff";
+  div.style.padding = "8px 10px";
+  div.style.borderRadius = "8px";
+  div.style.fontSize = "12px";
+  div.style.lineHeight = "1.2";
+  div.innerHTML = `
+    <div style="font-weight:600;margin-bottom:6px">Legenda</div>
+    <div>● <span style="opacity:.9">Pelanggan</span> — biru muda</div>
+    <div>● <span style="opacity:.9">Aduan Baru</span> — merah</div>
+    <div>● <span style="opacity:.9">Aduan Proses</span> — kuning</div>
+    <div>● <span style="opacity:.9">Aduan Selesai</span> — hijau</div>
+    <div>● <span style="opacity:.9">Sensor & Alert</span> — indikator warna</div>
+  `;
+  return div;
+};
+// default: sesuai checkbox #chkLegend (di HTML sudah checked)
+function ensureLegend(){
+  const cb = $("#chkLegend");
+  if (!cb) return;
+  if (cb.checked && !map.hasControlLegend){
+    legendCtl.addTo(map);
+    map.hasControlLegend = true;
+  }
+  if (!cb.checked && map.hasControlLegend){
+    legendCtl.remove();
+    map.hasControlLegend = false;
+  }
+}
+$("#chkLegend")?.addEventListener("change", ensureLegend);
+setTimeout(ensureLegend, 300); // tunggu map siap
+
+// ====== LAYER GROUP REGISTRY & CHECKBOX WIRING ======
+// bikin penampung untuk layer yang ada/akan ada
+window.LayerRegistry = {
+  pelanggan:   () => window.pelangganLayer,
+  aduan:       () => window.aduanLayer,
+  wilayah:     () => (window.wilayahLayer ??= L.layerGroup()), // placeholder
+  sensor:      () => window.tekananLayer,       // from loadTekanan()
+  pipa:        () => (window.pipaLayer ??= L.layerGroup()),    // placeholder
+  legend:      () => null // legend dihandle terpisah
+};
+
+// helper: pastikan layer nempel ke map sesuai checkbox
+function syncLayer(key, checked){
+  const getLayer = LayerRegistry[key];
+  if (!getLayer) return;
+  const lyr = getLayer();
+  if (!lyr && key!=="legend") return; // belum ada, nanti disinkron ulang
+
+  if (key==="legend"){ ensureLegend(); return; }
+
+  if (checked){
+    if (lyr && !map.hasLayer(lyr)) lyr.addTo(map);
+  } else {
+    if (lyr && map.hasLayer(lyr)) map.removeLayer(lyr);
+  }
+}
+
+// wire semua checkbox di tab "layers"
+const wiring = [
+  ["#chkPelanggan","pelanggan"],
+  ["#chkAduan","aduan"],
+  ["#chkWilayah","wilayah"],
+  ["#chkSensor","sensor"],
+  ["#chkPipa","pipa"],
+  ["#chkLegend","legend"]
+];
+wiring.forEach(([sel,key])=>{
+  const cb = $(sel);
+  if (!cb) return;
+  // set initial state saat page ready
+  setTimeout(()=>syncLayer(key, cb.checked), 400);
+  // listen perubahan
+  cb.addEventListener("change", ()=>syncLayer(key, cb.checked));
+});
+
+// ====== RESYNC ketika data async selesai dibuat ======
+// pelanggan: dibuat di loadData()
+const _origLoadData = window.loadData;
+if (typeof _origLoadData === "function"){
+  window.loadData = async function(){
+    await _origLoadData();
+    // sync setelah layer baru ada
+    const cb = $("#chkPelanggan");
+    if (cb) syncLayer("pelanggan", cb.checked);
+  }
+}
+// aduan: dibuat di loadAduan()
+const _origLoadAduan = window.loadAduan;
+if (typeof _origLoadAduan === "function"){
+  window.loadAduan = async function(){
+    await _origLoadAduan();
+    const cb = $("#chkAduan");
+    if (cb) syncLayer("aduan", cb.checked);
+  }
+}
+// tekanan (sensor): dibuat di loadTekanan()
+const _origLoadTekanan = window.loadTekanan;
+if (typeof _origLoadTekanan === "function"){
+  window.loadTekanan = async function(){
+    await _origLoadTekanan();
+    const cb = $("#chkSensor");
+    if (cb) syncLayer("sensor", cb.checked);
+  }
+}
+
+// ====== QUALITY OF LIFE ======
+// tutup panel otomatis di layar kecil saat klik map
+map.on("click", ()=> {
+  if (window.innerWidth < 992) sidebar.classList.remove("active");
+});
+
+// kasih fokus ke field cari saat buka tab search
+$("#search")?.addEventListener("click", ()=>{
+  setTimeout(()=> $("#searchNama")?.focus(), 150);
+});
+
+console.log("✅ Panel & tabs tersambung. Basemap cepat, checkbox layer, legend & back dashboard aktif.");
+</script>
+
+
+</body>
+</html>

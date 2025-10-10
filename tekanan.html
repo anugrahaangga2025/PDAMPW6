@@ -3,150 +3,210 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitoring Tekanan Air</title>
-
+  <title>Monitoring Tekanan Air PDAM</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/justgage@1.4.2/justgage.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/raphael@2.3.0/raphael.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
   <style>
-    body {
-      background-color: #fff;
-      color: #212529;
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #0b1f3b;
-      color: #fff;
-      text-align: center;
-      padding: 12px;
-      font-weight: 600;
-      font-size: 18px;
-      letter-spacing: 0.5px;
-    }
-    .section {
-      margin: 25px auto;
-      max-width: 1200px;
-    }
-    .card {
-      background: #fff;
-      border: 1px solid #dee2e6;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 25px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-    .card h5 {
-      color: #007bff;
-      font-weight: 600;
-      margin-bottom: 15px;
-      font-size: 17px;
-    }
-    iframe {
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-    }
-    .row {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .col-half {
-      flex: 1;
-      min-width: 480px;
-    }
-    #gauge {
-      width: 100%;
-      height: 300px;
-    }
-    .log-frame {
-      height: 250px;
-      transform: scale(0.9);
-      transform-origin: top left;
-      width: 111%;
-    }
+    body { background:#f4f6f9; font-family:"Poppins",sans-serif; }
+    .navbar{background:#0d2a57;}
+    .navbar-brand{color:#fff!important;font-weight:600;}
+    .card{border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+    table th{background:#0d2a57;color:white;}
+    .pressure-box{font-size:2rem;font-weight:bold;}
+    .low{color:#dc3545!important;}
+    .normal{color:#0d6efd!important;}
+    .high{color:#198754!important;}
+    #map { height: 350px; border-radius:10px; }
+    .alert-low{color:#dc3545;font-size:13px;}
+    .alert-high{color:#198754;font-size:13px;}
   </style>
 </head>
 <body>
+  <!-- 🔹 NAVBAR -->
+  <nav class="navbar navbar-expand-lg mb-4">
+    <div class="container-fluid">
+      <a href="index.html" class="navbar-brand d-flex align-items-center">
+        <img src="https://perumdatirtawening.co.id/asset/image/logo-horizon-kecils.gif" width="160">
+      </a>
+      <div><a href="index.html" class="btn btn-light btn-sm">🏠 Dashboard</a></div>
+    </div>
+  </nav>
 
-  <header><a class="navbar-brand fw-bold" href="index.html">
-        <img src="https://perumdatirtawening.co.id/asset/image/logo-horizon-kecils.gif" height="45" alt="">
-      </a></header>
-
-  <div class="section">
-    <!-- Grafik & Gauge -->
-    <div class="row">
-      <div class="col-half card">
-        <h5>Grafik Tekanan</h5>
-        <iframe 
-          src="https://thingspeak.com/channels/3102639/charts/1?bgcolor=%23ffffff&color=%23007bff&dynamic=true&type=line&update=15"
-          height="320">
-        </iframe>
+  <div class="container">
+    <div class="row g-4">
+      <!-- Grafik -->
+      <div class="col-lg-8">
+        <div class="card p-3">
+          <h5 class="text-primary mb-3">📈 Grafik Tekanan Air (bar)</h5>
+          <canvas id="pressureChart" height="100"></canvas>
+        </div>
       </div>
-
-      <div class="col-half card">
-        <h5>Tekanan Air (Gauge)</h5>
-        <div id="gauge"></div>
-        <p class="text-center text-muted small" id="updateTime">Memuat data...</p>
+      <!-- Tekanan Saat Ini -->
+      <div class="col-lg-4">
+        <div class="card p-3 text-center">
+          <h6 class="text-secondary">Tekanan Saat Ini</h6>
+          <div class="row">
+            <div class="col-4">
+              <p>Sensor 1</p>
+              <div id="pressure1" class="pressure-box">--</div>
+              <div id="alert1" class="alert-low d-none">⚠️ Tekanan Rendah!</div>
+              <div id="alert1h" class="alert-high d-none">✅ Tekanan Tinggi!</div>
+            </div>
+            <div class="col-4">
+              <p>Sensor 2</p>
+              <div id="pressure2" class="pressure-box">--</div>
+              <div id="alert2" class="alert-low d-none">⚠️ Tekanan Rendah!</div>
+              <div id="alert2h" class="alert-high d-none">✅ Tekanan Tinggi!</div>
+            </div>
+            <div class="col-4">
+              <p>Sensor 3</p>
+              <div id="pressure3" class="pressure-box">--</div>
+              <div id="alert3" class="alert-low d-none">⚠️ Tekanan Rendah!</div>
+              <div id="alert3h" class="alert-high d-none">✅ Tekanan Tinggi!</div>
+            </div>
+          </div>
+          <small id="lastUpdate" class="text-muted"></small>
+        </div>
       </div>
     </div>
 
-    <!-- Map -->
-  <!--  <div class="card">
-      <h5>Lokasi Sensor</h5>
-      <iframe 
-        src="https://thingspeak.com/channels/3102639/maps/channel_show"
-        height="350">
-      </iframe>
+    <!-- Peta Sensor -->
+    <div class="card p-3 mt-4">
+      <h5 class="text-primary mb-3">🗺️ Lokasi Sensor Tekanan</h5>
+      <div id="map"></div>
     </div>
 
-    <!-- Log -->
-    <div class="card">
-      <h5>Log Data Tekanan</h5>
-      <iframe 
-        class="log-frame"
-        src="https://thingspeak.com/channels/3102639/charts/1?bgcolor=%23ffffff&color=%23007bff&results=40&type=table">
-      </iframe>
+    <!-- Tabel Riwayat -->
+    <div class="card p-3 mt-4">
+      <h5 class="text-primary mb-3">🧾 Riwayat Pembacaan Tekanan</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered text-center align-middle" id="dataTable">
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Sensor 1 (bar)</th>
+              <th>Sensor 2 (bar)</th>
+              <th>Sensor 3 (bar)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
+  <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
   <script>
-    // === Ambil data terakhir dari ThingSpeak ===
-    async function updateGauge() {
-      try {
-        const res = await fetch("https://api.thingspeak.com/channels/3102639/fields/1/last.json");
-        const data = await res.json();
-        const pressure = parseFloat(data.field1 || 0);
-        const time = new Date(data.created_at).toLocaleString("id-ID");
+    const CHANNEL_ID = 3102639;
+    const API_URL = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=10`;
+    const ALERT_URL = "https://script.google.com/macros/s/AKfycbz12345abcd/exec"; // Ganti dengan URL GAS kamu
+    const SENSOR_LOC = {
+      sensor1: { name: "Reservoir Utama", lat: -6.914744, lng: 107.60981 },
+      //sensor2: { name: "Zona Timur", lat: -6.92184, lng: 107.6344 },
+      //sensor3: { name: "Zona Barat", lat: -6.9052, lng: 107.6014 }
+    };
 
-        g.refresh(pressure);
-        document.getElementById("updateTime").textContent = "Diperbarui: " + time;
-      } catch (e) {
-        document.getElementById("updateTime").textContent = "Gagal mengambil data.";
-      }
-    }
+    let chart, markers = {}, isBeeping = false;
+    const map = L.map("map").setView([-6.914744, 107.60981], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
 
-    // === Buat Gauge ===
-    const g = new JustGage({
-      id: "gauge",
-      value: 0,
-      min: 0,
-      max: 5,
-      label: "Tekanan (Bar)",
-      pointer: true,
-      gaugeWidthScale: 0.6,
-      customSectors: [
-        { color: "#dc3545", lo: 0, hi: 1 },
-        { color: "#ffc107", lo: 1, hi: 2 },
-        { color: "#28a745", lo: 2, hi: 5 }
-      ]
+    Object.keys(SENSOR_LOC).forEach(key => {
+      const s = SENSOR_LOC[key];
+      markers[key] = L.circleMarker([s.lat, s.lng], {
+        color: "#0d6efd",
+        radius: 10,
+        fillOpacity: 0.7
+      }).bindPopup(`<b>${s.name}</b><br>Menunggu data...`).addTo(map);
     });
 
-    updateGauge();
-    setInterval(updateGauge, 60000); // refresh tiap 1 menit
+    async function loadPressure() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const feeds = data.feeds || [];
+
+        const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString("id-ID"));
+        const p1 = feeds.map(f => parseFloat(f.field1 || 0));
+        const p2 = feeds.map(f => parseFloat(f.field2 || 0));
+        const p3 = feeds.map(f => parseFloat(f.field3 || 0));
+        const last = feeds[feeds.length - 1];
+
+        if (last) {
+          updateSensor("pressure1","alert1","alert1h",last.field1,"sensor1");
+          //updateSensor("pressure2","alert2","alert2h",last.field2,"sensor2");
+          //updateSensor("pressure3","alert3","alert3h",last.field3,"sensor3");
+          document.getElementById("lastUpdate").textContent = "Update: " + new Date(last.created_at).toLocaleString("id-ID");
+        }
+
+        const tbody = document.querySelector("#dataTable tbody");
+        tbody.innerHTML = feeds.reverse().map(f => `
+          <tr>
+            <td>${new Date(f.created_at).toLocaleString("id-ID")}</td>
+            <td>${parseFloat(f.field1||0).toFixed(2)}</td>
+            <td>${parseFloat(f.field2||0).toFixed(2)}</td>
+            <td>${parseFloat(f.field3||0).toFixed(2)}</td>
+          </tr>`).join("");
+
+        const ctx = document.getElementById("pressureChart");
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              { label: "Sensor 1", data: p1, borderColor:"#0d6efd", backgroundColor:"rgba(13,110,253,0.2)", fill:true },
+
+            ]
+          },
+          options: { plugins:{legend:{position:"bottom"}}, scales:{y:{beginAtZero:true}} }
+        });
+      } catch(err) { console.error("Gagal ambil data:", err); }
+    }
+
+    function updateSensor(id, alertLowId, alertHighId, value, key) {
+      const el = document.getElementById(id);
+      const low = document.getElementById(alertLowId);
+      const high = document.getElementById(alertHighId);
+      const v = parseFloat(value||0);
+      el.textContent = v.toFixed(2);
+      el.className = "pressure-box";
+      low.classList.add("d-none"); high.classList.add("d-none");
+
+      let color = "#0d6efd";
+      if (v < 0.3) { el.classList.add("low"); low.classList.remove("d-none"); color = "red"; playBeep(); sendTelegram(key,v); }
+      else if (v > 0.7) { el.classList.add("high"); high.classList.remove("d-none"); color = "blue"; stopBeep(); }
+      else { el.classList.add("normal"); color = "green"; stopBeep(); }
+
+      markers[key].setStyle({ color });
+      markers[key].bindPopup(`<b>${SENSOR_LOC[key].name}</b><br>Tekanan: ${v.toFixed(2)} bar`);
+    }
+
+    async function sendTelegram(key, value) {
+      const s = SENSOR_LOC[key];
+      const mapLink = `https://www.google.com/maps?q=${s.lat},${s.lng}`;
+      await fetch(`${ALERT_URL}?sensor=${encodeURIComponent(s.name)}&tekanan=${value}&lokasi=${encodeURIComponent(mapLink)}`);
+    }
+
+    function playBeep() {
+      if (!isBeeping) {
+        document.getElementById("alarmSound").play().catch(()=>{});
+        isBeeping = true;
+        setTimeout(()=>isBeeping=false,3000);
+      }
+    }
+    function stopBeep() {
+      const beep = document.getElementById("alarmSound");
+      beep.pause(); beep.currentTime = 0; isBeeping = false;
+    }
+
+    loadPressure();
+    setInterval(loadPressure, 30000);
   </script>
 </body>
 </html>

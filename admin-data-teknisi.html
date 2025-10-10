@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Data Teknisi</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet"/>
+
+  <style>
+    :root { --brand:#4db8ff; --ink:#cfeaff; --panel: rgba(16, 40, 78, 0.85); --panel-soft: rgba(16, 40, 78, 0.65); }
+    body { color:#fff; font-family:'Segoe UI',sans-serif; min-height:100vh; background:#0b1f3b; }
+    .navbar { background: rgba(11,31,59,.7); box-shadow: 0 2px 10px rgba(0,0,0,.4); backdrop-filter: blur(8px); }
+    .navbar-brand { color: var(--brand) !important; font-weight: 700; }
+    .card { background: var(--panel); border: none; border-radius: 16px; color: #fff; }
+    .card-header { background: var(--panel-soft); color: var(--ink); border-bottom: 1px solid rgba(255,255,255,.08); }
+    .form-control, .form-select { background: rgba(255,255,255,.08); color:#fff; border:1px solid rgba(255,255,255,.15); }
+    .form-control::placeholder { color:#cfeaff; opacity:.6; }
+    .btn-brand { background: var(--brand); color:#07263f; border:none; }
+    .table thead th { white-space: nowrap; }
+    a { color: var(--ink); }
+    footer { text-align:center; color:#aaa; font-size:.9rem; padding:16px 0; border-top:1px solid rgba(255,255,255,.1); margin-top:24px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-dark px-3">
+    <a class="navbar-brand" href="index-home.html">
+      <img src="https://perumdatirtawening.co.id/asset/image/logo-horizon-kecils.gif" height="42" class="me-2" alt="Logo"/>
+      Admin · Data Teknisi
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a class="btn btn-sm btn-outline-info" href="admin-daftar-aduan.html">Daftar Aduan</a>
+      <button class="btn btn-sm btn-outline-danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <script>
+    function isAuthed(){ return !!localStorage.getItem('adm_auth'); }
+    function logout(){ localStorage.removeItem('adm_auth'); location.href = 'admin-login.html'; }
+    if (!isAuthed() && !location.pathname.endsWith('admin-login.html')) location.href = 'admin-login.html';
+  </script>
+
+  <div class="container py-4">
+    <div class="text-center mb-3" data-aos="fade-down">
+      <h3 class="fw-bold text-info"><i class="fas fa-clipboard-check me-2"></i>Data Teknisi</h3>
+      <p class="text-secondary">Rekap pekerjaan teknisi yang disimpan via <code>mode=teknisi_selesai</code>.</p>
+    </div>
+
+    <!-- Filter -->
+    <div class="card p-3 mb-3" data-aos="fade-up">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Pencarian</label>
+          <input id="q" class="form-control" placeholder="Tiket/Teknisi/Tim/Catatan">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Filter Waktu (ketik sebagian, ex: 2025-10)</label>
+          <input id="qtime" class="form-control" placeholder="yyyy-mm atau teks">
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+          <button class="btn btn-brand" onclick="render()">Terapkan</button>
+          <button class="btn btn-outline-light" onclick="exportCSV()">Ekspor CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabel -->
+    <div class="card p-3" data-aos="fade-up" data-aos-delay="50">
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Tiket</th>
+              <th>Teknisi / Tim</th>
+              <th>Waktu Selesai</th>
+              <th>Catatan</th>
+              <th>Lokasi</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-between mt-2">
+        <small id="countInfo" class="text-secondary"></small>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-light btn-sm" onclick="prev()">‹</button>
+          <button class="btn btn-outline-light btn-sm" onclick="next()">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2025 PDAM Tirtawening — Admin</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>AOS.init({duration:800, once:true});</script>
+
+  <script>
+    // === GANTI DENGAN URL WEB APP GAS KAMU ===
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzWAFRjfPV2DIqc0gFeVdVd88ADpBLif3FSxaozMqCLqUCx6QF1BFTv8dwgDmfF2lKT/exec";
+
+    const page = { idx: 0, size: 10 };
+    let DATA = [];
+
+    function mapLink(latlng){
+      return latlng && latlng.includes(',')
+        ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(latlng)}" target="_blank">📍</a>`
+        : '';
+    }
+
+    async function fetchTeknisi(){
+      const resp = await fetch(GAS_URL + "?mode=teknisi");
+      const list = await resp.json();
+      // normalisasi key sesuai header yang kita set di GAS
+      return list.map(o => ({
+        tiket: o["Tiket"] || "",
+        teknisi: o["Teknisi"] || "",
+        tim: o["Tim/Rayon"] || "",
+        waktu: o["Waktu Selesai"] || "",
+        catatan: o["Catatan"] || "",
+        lokasi: o["Lokasi (lat,lng)"] || "",
+        foto: o["Foto Hasil"] || "",
+        ts: o["Timestamp"] || ""
+      }));
+    }
+
+    function filtered(){
+      const qv = (q.value || '').toLowerCase();
+      const qt = (qtime.value || '').toLowerCase();
+
+      return DATA.filter(r => {
+        const hitText =
+          (r.tiket||'').toLowerCase().includes(qv) ||
+          (r.teknisi||'').toLowerCase().includes(qv) ||
+          (r.tim||'').toLowerCase().includes(qv) ||
+          (r.catatan||'').toLowerCase().includes(qv);
+        const hitTime = !qt || (r.waktu||'').toLowerCase().includes(qt) || (r.ts||'').toLowerCase().includes(qt);
+        return hitText && hitTime;
+      });
+    }
+
+    function exportCSV(){
+      const rows = filtered();
+      const header = ['Timestamp','Tiket','Teknisi','Tim/Rayon','Catatan','Lokasi (lat,lng)','Waktu Selesai','Foto Hasil'];
+      const content = rows.map(r => [r.ts, r.tiket, r.teknisi, r.tim, r.catatan, r.lokasi, r.waktu, r.foto]);
+      const csv = [header, ...content].map(e => e.map(x => `"${(x||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'data-teknisi.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function prev(){ if(page.idx>0){ page.idx--; render(); } }
+    function next(){
+      const total = filtered().length;
+      if((page.idx+1)*page.size < total){ page.idx++; render(); }
+    }
+
+    function render(){
+      const rows = filtered();
+      const start = page.idx * page.size;
+      const items = rows.slice(start, start + page.size);
+
+      tb.innerHTML = items.map((r, i) => `
+        <tr>
+          <td>${start + i + 1}</td>
+          <td><strong>${r.tiket}</strong></td>
+          <td>${r.teknisi || '-'}<br><small class="text-secondary">${r.tim || ''}</small></td>
+          <td>${r.waktu || ''}</td>
+          <td>${r.catatan || ''}</td>
+          <td>${mapLink(r.lokasi)}</td>
+          <td>${r.foto ? `<a href="${r.foto}" target="_blank">📸</a>` : '-'}</td>
+        </tr>
+      `).join('');
+
+      countInfo.textContent = `Menampilkan ${rows.length ? start+1 : 0}–${Math.min(start+page.size, rows.length)} dari ${rows.length} data`;
+    }
+
+    async function loadAndRender(){
+      try {
+        DATA = await fetchTeknisi();
+        page.idx = 0;
+        render();
+      } catch(err) {
+        console.error(err);
+        alert("Gagal memuat data teknisi. Cek GAS_URL & deploy Web App (Anyone).");
+      }
+    }
+
+    if(!localStorage.getItem('adm_auth')) location.href='admin-login.html';
+    loadAndRender();
+  </script>
+</body>
+</html>

@@ -8,9 +8,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { background: #f4f6f9; font-family: "Poppins", sans-serif; }
-    .navbar { background: #0d6efd; }
+    .navbar { background: #0d2a57; }
     .navbar-brand, .nav-link { color: #fff !important; font-weight: 500; }
-    .table thead { background: #0d6efd; color: white; }
+    .table thead { background: #0d2a57; color: white; }
     td select { border: 1px solid #ccc; border-radius: 4px; padding: 2px 6px; }
     .status-Baru { background: #fff3cd; }
     .status-Proses { background: #cfe2ff; }
@@ -29,9 +29,11 @@
   <!-- 🔹 NAVBAR -->
   <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">💧 Admin PDAM</a>
+      <a href="index.html" class="navbar-brand d-flex align-items-center">
+      <img src="https://perumdatirtawening.co.id/asset/image/logo-horizon-kecils.gif" width="160">
+    </a>
       <div class="d-flex">
-        <a class="btn btn-light btn-sm" href="index.html">🏠 Dashboard</a>
+        <a class="btn btn-light btn-sm" href="index.html">🏠</a>
       </div>
     </div>
   </nav>
@@ -80,7 +82,7 @@
   <div class="toast-container"></div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwvstbCWOP980fxqNOHQ-pgjcjlieXMtLXi7BVbKPGkUNFyGawAWYzBlqm-gEdkcy3kpw/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5BaQOUHGv_B9wHAraZB3vtbxBwnKgATsXvfb0WpwQ9NYausrgsfusi4LHlvxLFzfs3Q/exec";
     let allData = [];
     let chartInstance = null;
 
